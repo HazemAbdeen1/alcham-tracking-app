@@ -8,11 +8,14 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <script>
-    // Your Firebase configuration
+  <!-- Firebase SDK - Using correct version (9.22.2) -->
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    // Your web app's Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyCMSPqRbQaBqHA2NsdlUc2nOaPx9XxBH2E",
       authDomain: "backend-b4231.firebaseapp.com",
@@ -24,8 +27,23 @@
     };
 
     // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    // Make db available globally
+    window.db = db;
+    window.firestoreCollection = collection;
+    window.firestoreAddDoc = addDoc;
+    window.firestoreGetDocs = getDocs;
+    window.firestoreDoc = doc;
+    window.firestoreUpdateDoc = updateDoc;
+    window.firestoreDeleteDoc = deleteDoc;
+    
+    // Signal that Firebase is ready
+    window.firebaseReady = true;
+    const event = new Event('firebase-ready');
+    document.dispatchEvent(event);
   </script>
   
   <style>
@@ -77,6 +95,175 @@
       line-height: 25px;
       color: white;
       font-weight: bold;
+    }
+    .add-customer-tooltip {
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      max-width: 300px;
+    }
+    .add-customer-tooltip .title {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .add-customer-tooltip input,
+    .add-customer-tooltip select {
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 4px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .add-customer-tooltip button {
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .add-customer-tooltip .save-btn {
+      background-color: #3B82F6;
+      color: white;
+      margin-right: 4px;
+    }
+    .add-customer-tooltip .cancel-btn {
+      background-color: #9CA3AF;
+      color: white;
+    }
+    .map-mode-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background-color: white;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 5px;
+    }
+    .map-mode-toggle button {
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .map-mode-toggle button.active {
+      background-color: #3B82F6;
+      color: white;
+    }
+    .map-mode-toggle button:not(.active) {
+      background-color: #F3F4F6;
+      color: #374151;
+    }
+    .location-button {
+      position: absolute;
+      bottom: 20px;
+      right: 10px;
+      z-index: 1000;
+      background-color: white;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .location-button:hover {
+      background-color: #F3F4F6;
+    }
+    .location-button svg {
+      width: 24px;
+      height: 24px;
+    }
+    .tracking-status {
+      position: absolute;
+      bottom: 20px;
+      left: 10px;
+      z-index: 1000;
+      background-color: white;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 8px 12px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+    }
+    .tracking-status .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .tracking-status .active {
+      background-color: #10B981;
+    }
+    .tracking-status .inactive {
+      background-color: #6B7280;
+    }
+    .tracking-controls {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f9fafb;
+      border-radius: 4px;
+      border: 1px solid #e5e7eb;
+    }
+    .tracking-interval {
+      display: flex;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .tracking-interval label {
+      margin-right: 10px;
+      font-size: 14px;
+    }
+    .tracking-interval select {
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+    }
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+      }
+    }
+    .salesperson-path {
+      stroke: #3B82F6;
+      stroke-width: 3;
+      stroke-dasharray: 5, 5;
+      opacity: 0.7;
+    }
+    .dropdown-container {
+      position: relative;
+      width: 100%;
+    }
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      max-height: 200px;
+      overflow-y: auto;
+      background-color: white;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      z-index: 10;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .dropdown-item {
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .dropdown-item:hover {
+      background-color: #f3f4f6;
     }
   </style>
 </head>
@@ -194,8 +381,94 @@
             </div>
           </div>
           
+          <!-- Salesperson Tracking Controls (for admins) -->
+          <div id="adminTrackingControls" class="mb-4 hidden">
+            <div class="tracking-controls">
+              <div class="flex justify-between items-center">
+                <h3 class="font-medium text-gray-900">Salesperson Tracking</h3>
+                <div>
+                  <label class="inline-flex items-center">
+                    <input type="checkbox" id="showSalespersonPaths" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span class="ml-2 text-sm text-gray-700">Show Paths</span>
+                  </label>
+                </div>
+              </div>
+              <div class="mt-2">
+                <label for="trackingSalesperson" class="block text-sm font-medium text-gray-700 mb-1">Select Salesperson</label>
+                <select id="trackingSalesperson" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                  <option value="all">All Salespersons</option>
+                  <!-- Salesperson options will be added dynamically -->
+                </select>
+              </div>
+              <div class="mt-2">
+                <label for="trackingDateRange" class="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+                <select id="trackingDateRange" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="week">Last 7 days</option>
+                  <option value="month">Last 30 days</option>
+                  <option value="all">All time</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Salesperson Tracking Controls (for salespersons) -->
+          <div id="salespersonTrackingControls" class="mb-4 hidden">
+            <div class="tracking-controls">
+              <div class="flex justify-between items-center">
+                <h3 class="font-medium text-gray-900">Your Location Tracking</h3>
+                <div id="trackingStatusIndicator" class="flex items-center">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <span class="w-2 h-2 bg-gray-400 rounded-full mr-1"></span>
+                    Inactive
+                  </span>
+                </div>
+              </div>
+              <div class="mt-2 flex space-x-2">
+                <button id="startTrackingBtn" class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm">
+                  Start Tracking
+                </button>
+                <button id="stopTrackingBtn" class="bg-gray-200 text-gray-700 py-1 px-3 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm" disabled>
+                  Stop Tracking
+                </button>
+              </div>
+              <div class="tracking-interval">
+                <label for="trackingInterval" class="text-sm text-gray-700">Update interval:</label>
+                <select id="trackingInterval" class="text-sm">
+                  <option value="30">30 seconds</option>
+                  <option value="60" selected>1 minute</option>
+                  <option value="300">5 minutes</option>
+                  <option value="600">10 minutes</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
           <!-- Map Container -->
-          <div id="map" class="rounded-lg overflow-hidden"></div>
+          <div class="relative">
+            <div id="map" class="rounded-lg overflow-hidden"></div>
+            
+            <!-- Map Mode Toggle -->
+            <div class="map-mode-toggle">
+              <button id="viewModeBtn" class="active">View Mode</button>
+              <button id="addModeBtn">Add Customer</button>
+            </div>
+            
+            <!-- Location Button -->
+            <div id="locationButton" class="location-button" title="Use my location">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            
+            <!-- Tracking Status (for salespersons) -->
+            <div id="trackingStatus" class="tracking-status hidden">
+              <div class="status-indicator inactive"></div>
+              <span>Tracking inactive</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -246,7 +519,10 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label for="customerName" class="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
-                <input type="text" id="customerName" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <div class="dropdown-container">
+                  <input type="text" id="customerName" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" autocomplete="off">
+                  <div id="customerNameDropdown" class="dropdown-menu hidden"></div>
+                </div>
               </div>
               <div>
                 <label for="customerStatus" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -269,6 +545,15 @@
                 <div>
                   <label for="customerLng" class="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
                   <input type="text" id="customerLng" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div class="col-span-2">
+                  <button id="useMyLocationBtn" class="w-full mt-1 bg-gray-200 text-gray-700 py-1 px-3 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Use My Location
+                  </button>
                 </div>
               </div>
               <div>
@@ -483,6 +768,7 @@
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customers</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="salespersonTableBody" class="bg-white divide-y divide-gray-200">
@@ -502,9 +788,14 @@
     let markers = [];
     let competitorMarkers = [];
     let salespersonMarkers = [];
+    let salespersonPaths = [];
+    let userLocationMarker = null;
     let isAuthenticated = false;
     let currentUser = null;
     let trackingInterval = null;
+    let mapMode = 'view'; // 'view' or 'add'
+    let addCustomerTooltip = null;
+    let customerSuggestions = [];
     
     // Global data object
     const data = {
@@ -516,15 +807,17 @@
     // Load data from Firebase
     async function loadFromFirebase() {
       try {
+        console.log("Attempting to load data from Firebase...");
+        
         // Check if users collection exists, if not create sample data
-        const usersSnapshot = await db.collection('users').get();
+        const usersSnapshot = await window.firestoreGetDocs(window.firestoreCollection(window.db, 'users'));
         
         if (usersSnapshot.empty) {
           // Create sample data
           console.log("Creating sample data...");
           
           // Add admin user
-          await db.collection('users').add({
+          const adminRef = await window.firestoreAddDoc(window.firestoreCollection(window.db, 'users'), {
             username: 'Hazem Abdeen',
             password: 'acrylique',
             fullName: 'Hazem Abdeen',
@@ -532,7 +825,7 @@
           });
           
           // Add salesperson
-          await db.collection('users').add({
+          const salesRef = await window.firestoreAddDoc(window.firestoreCollection(window.db, 'users'), {
             username: 'sales1',
             password: 'sales123',
             fullName: 'Ahmad Khalid',
@@ -540,14 +833,14 @@
           });
           
           // Add competitors
-          const comp1 = await db.collection('competitors').add({
+          const comp1 = await window.firestoreAddDoc(window.firestoreCollection(window.db, 'competitors'), {
             name: 'SyriaChem',
             location: 'Damascus Industrial Zone',
             products: 'Industrial chemicals, Solvents',
             color: '#FF5733'
           });
           
-          const comp2 = await db.collection('competitors').add({
+          const comp2 = await window.firestoreAddDoc(window.firestoreCollection(window.db, 'competitors'), {
             name: 'MedEast Chemicals',
             location: 'Latakia Port Area',
             products: 'Pharmaceutical chemicals, Reagents',
@@ -555,7 +848,7 @@
           });
           
           // Add customers
-          await db.collection('customers').add({
+          await window.firestoreAddDoc(window.firestoreCollection(window.db, 'customers'), {
             name: 'Damascus Pharmaceuticals',
             status: 'active',
             contact: '+963 11 123 4567',
@@ -566,11 +859,11 @@
             remarks: 'Interested in our new product line',
             lastVisit: '2023-05-10',
             nextVisit: '2023-06-15',
-            addedBy: 1,
-            addedOn: '2023-05-10T10:30:00'
+            addedBy: adminRef.id,
+            addedOn: new Date().toISOString()
           });
           
-          await db.collection('customers').add({
+          await window.firestoreAddDoc(window.firestoreCollection(window.db, 'customers'), {
             name: 'Aleppo Medical Supplies',
             status: 'hard',
             contact: '+963 21 987 6543',
@@ -581,33 +874,36 @@
             remarks: 'Need to discuss pricing',
             lastVisit: '2023-05-05',
             nextVisit: '2023-06-20',
-            addedBy: 1,
-            addedOn: '2023-05-05T14:15:00'
+            addedBy: salesRef.id,
+            addedOn: new Date().toISOString()
           });
         }
         
         // Load users
-        const usersData = await db.collection('users').get();
+        const usersData = await window.firestoreGetDocs(window.firestoreCollection(window.db, 'users'));
         data.users = usersData.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
         
         // Load competitors
-        const competitorsData = await db.collection('competitors').get();
+        const competitorsData = await window.firestoreGetDocs(window.firestoreCollection(window.db, 'competitors'));
         data.competitors = competitorsData.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
         
         // Load customers
-        const customersData = await db.collection('customers').get();
+        const customersData = await window.firestoreGetDocs(window.firestoreCollection(window.db, 'customers'));
         data.customers = customersData.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
         
-        console.log("Data loaded from Firebase");
+        // Build customer suggestions for autocomplete
+        customerSuggestions = data.customers.map(customer => customer.name);
+        
+        console.log("Data loaded from Firebase:", data);
       } catch (error) {
         console.error("Error loading data:", error);
         alert("Error connecting to database. Using local data instead.");
@@ -679,6 +975,9 @@
             addedOn: '2023-05-05T14:15:00'
           }
         ];
+        
+        // Build customer suggestions for autocomplete
+        customerSuggestions = data.customers.map(customer => customer.name);
       }
     }
     
@@ -694,13 +993,203 @@
       
       // Add click event to map for adding customers
       map.on('click', function(e) {
-        if (document.getElementById('customerForm').classList.contains('hidden')) {
+        if (mapMode === 'add') {
+          showAddCustomerTooltip(e.latlng);
+        }
+      });
+    }
+    
+    // Show add customer tooltip
+    function showAddCustomerTooltip(latlng) {
+      // Close existing tooltip if open
+      if (addCustomerTooltip) {
+        map.closePopup(addCustomerTooltip);
+      }
+      
+      // Create tooltip content
+      const tooltipContent = document.createElement('div');
+      tooltipContent.className = 'add-customer-tooltip';
+      
+      tooltipContent.innerHTML = `
+        <div class="title">Add New Customer</div>
+        <input type="text" id="quickCustomerName" placeholder="Customer Name" class="mb-2">
+        <select id="quickCustomerStatus" class="mb-2">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="hard">Hard</option>
+          <option value="potential">Potential</option>
+        </select>
+        <div class="flex justify-end mt-2">
+          <button class="save-btn" id="quickSaveCustomer">Save</button>
+          <button class="cancel-btn" id="quickCancelCustomer">Cancel</button>
+        </div>
+      `;
+      
+      // Create popup
+      addCustomerTooltip = L.popup()
+        .setLatLng(latlng)
+        .setContent(tooltipContent)
+        .openOn(map);
+      
+      // Add event listeners
+      setTimeout(() => {
+        document.getElementById('quickSaveCustomer').addEventListener('click', function() {
+          const name = document.getElementById('quickCustomerName').value.trim();
+          const status = document.getElementById('quickCustomerStatus').value;
+          
+          if (!name) {
+            alert('Please enter a customer name');
+            return;
+          }
+          
+          // Create customer data
+          const customerData = {
+            name: name,
+            status: status,
+            contact: '',
+            lat: latlng.lat,
+            lng: latlng.lng,
+            competitorIds: [],
+            categories: [],
+            remarks: '',
+            lastVisit: null,
+            nextVisit: null,
+            addedBy: currentUser.id,
+            addedOn: new Date().toISOString()
+          };
+          
+          // Save customer
+          saveQuickCustomer(customerData);
+        });
+        
+        document.getElementById('quickCancelCustomer').addEventListener('click', function() {
+          map.closePopup(addCustomerTooltip);
+          addCustomerTooltip = null;
+        });
+      }, 100);
+    }
+    
+    // Save quick customer
+    async function saveQuickCustomer(customerData) {
+      try {
+        // Save to Firebase
+        const docRef = await window.firestoreAddDoc(window.firestoreCollection(window.db, 'customers'), customerData);
+        
+        // Add to local data
+        data.customers.push({
+          id: docRef.id,
+          ...customerData
+        });
+        
+        // Update customer suggestions
+        customerSuggestions = data.customers.map(customer => customer.name);
+        
+        // Close tooltip
+        map.closePopup(addCustomerTooltip);
+        addCustomerTooltip = null;
+        
+        // Refresh markers
+        refreshMarkers();
+        
+        // Show confirmation
+        alert('Customer added successfully');
+      } catch (error) {
+        console.error("Error saving customer:", error);
+        alert('Error saving customer. Please try again.');
+      }
+    }
+    
+    // Set map mode
+    function setMapMode(mode) {
+      mapMode = mode;
+      
+      // Update button styles
+      if (mode === 'view') {
+        document.getElementById('viewModeBtn').classList.add('active');
+        document.getElementById('addModeBtn').classList.remove('active');
+        map.getContainer().style.cursor = '';
+      } else {
+        document.getElementById('viewModeBtn').classList.remove('active');
+        document.getElementById('addModeBtn').classList.add('active');
+        map.getContainer().style.cursor = 'crosshair';
+      }
+      
+      // Close any open tooltip
+      if (addCustomerTooltip) {
+        map.closePopup(addCustomerTooltip);
+        addCustomerTooltip = null;
+      }
+    }
+    
+    // Get user's current location
+    function getUserLocation() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('Geolocation is not supported by your browser'));
           return;
         }
         
-        document.getElementById('customerLat').value = e.latlng.lat.toFixed(6);
-        document.getElementById('customerLng').value = e.latlng.lng.toFixed(6);
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            });
+          },
+          (error) => {
+            reject(error);
+          },
+          { enableHighAccuracy: true }
+        );
       });
+    }
+    
+    // Show user's location on map
+    async function showUserLocation() {
+      try {
+        const location = await getUserLocation();
+        
+        // Remove existing marker if any
+        if (userLocationMarker) {
+          map.removeLayer(userLocationMarker);
+        }
+        
+        // Create marker
+        const markerHtml = `<div class="custom-marker pulse" style="background-color: #3B82F6;">U</div>`;
+        const icon = L.divIcon({
+          html: markerHtml,
+          className: '',
+          iconSize: [30, 30]
+        });
+        
+        userLocationMarker = L.marker([location.lat, location.lng], { icon: icon });
+        userLocationMarker.addTo(map);
+        
+        // Center map on user location
+        map.setView([location.lat, location.lng], 15);
+        
+        return location;
+      } catch (error) {
+        console.error("Error getting location:", error);
+        alert('Could not get your location. Please check your browser permissions.');
+        throw error;
+      }
+    }
+    
+    // Use current location for customer form
+    async function useCurrentLocationForCustomer() {
+      try {
+        const location = await getUserLocation();
+        
+        // Update form fields
+        document.getElementById('customerLat').value = location.lat;
+        document.getElementById('customerLng').value = location.lng;
+        
+        alert('Location updated successfully!');
+      } catch (error) {
+        console.error("Error getting location:", error);
+        alert('Could not get your location. Please check your browser permissions.');
+      }
     }
     
     // Refresh map markers
@@ -851,19 +1340,37 @@
       salespersonMarkers.forEach(marker => map.removeLayer(marker));
       salespersonMarkers = [];
       
+      // Clear existing paths
+      salespersonPaths.forEach(path => map.removeLayer(path));
+      salespersonPaths = [];
+      
       // Check if salespersons should be shown
       if (!document.getElementById('showSalespersons').checked) {
         return;
       }
       
+      // Get selected salesperson and date range
+      const selectedSalesperson = document.getElementById('trackingSalesperson')?.value || 'all';
+      const dateRange = document.getElementById('trackingDateRange')?.value || 'all';
+      const showPaths = document.getElementById('showSalespersonPaths')?.checked || false;
+      
+      // Filter salespersons
+      const salespersons = data.users.filter(user => {
+        if (user.role !== 'salesperson') return false;
+        if (!user.tracking || user.tracking.length === 0) return false;
+        if (selectedSalesperson !== 'all' && user.id !== selectedSalesperson) return false;
+        return true;
+      });
+      
       // Add salesperson markers
-      data.users.forEach(user => {
-        if (user.role !== 'salesperson' || !user.tracking || user.tracking.length === 0) {
-          return;
-        }
+      salespersons.forEach(user => {
+        // Filter tracking data by date range
+        const filteredTracking = filterTrackingByDateRange(user.tracking, dateRange);
+        
+        if (filteredTracking.length === 0) return;
         
         // Get latest tracking data
-        const latestTracking = user.tracking[user.tracking.length - 1];
+        const latestTracking = filteredTracking[filteredTracking.length - 1];
         
         // Create marker
         const markerHtml = `<div class="salesperson-marker">${user.fullName.charAt(0)}</div>`;
@@ -887,6 +1394,47 @@
         marker.bindPopup(popupContent);
         marker.addTo(map);
         salespersonMarkers.push(marker);
+        
+        // Add path if enabled
+        if (showPaths && filteredTracking.length > 1) {
+          const pathPoints = filteredTracking.map(point => [point.lat, point.lng]);
+          const path = L.polyline(pathPoints, { className: 'salesperson-path' });
+          path.addTo(map);
+          salespersonPaths.push(path);
+        }
+      });
+    }
+    
+    // Filter tracking data by date range
+    function filterTrackingByDateRange(tracking, dateRange) {
+      if (!tracking || tracking.length === 0 || dateRange === 'all') {
+        return tracking || [];
+      }
+      
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const monthAgo = new Date(today);
+      monthAgo.setDate(monthAgo.getDate() - 30);
+      
+      return tracking.filter(point => {
+        const pointDate = new Date(point.timestamp);
+        
+        switch (dateRange) {
+          case 'today':
+            return pointDate >= today;
+          case 'yesterday':
+            return pointDate >= yesterday && pointDate < today;
+          case 'week':
+            return pointDate >= weekAgo;
+          case 'month':
+            return pointDate >= monthAgo;
+          default:
+            return true;
+        }
       });
     }
     
@@ -960,14 +1508,16 @@
         const statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}</span>`;
         
         // Create categories list
-        const categoriesList = customer.categories.map(category => 
-          `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-1">${category}</span>`
-        ).join('');
+        const categoriesList = customer.categories && customer.categories.length > 0 ? 
+          customer.categories.map(category => 
+            `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-1">${category}</span>`
+          ).join('') : 'None';
         
         // Create competitors list
-        const competitorsList = getCompetitorNames(customer.competitorIds).map(name => 
-          `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1">${name}</span>`
-        ).join('');
+        const competitorsList = customer.competitorIds && customer.competitorIds.length > 0 ?
+          getCompetitorNames(customer.competitorIds).map(name => 
+            `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1">${name}</span>`
+          ).join('') : 'None';
         
         // Create action buttons
         let actionButtons = `
@@ -988,10 +1538,10 @@
             ${statusBadge}
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex flex-wrap gap-1">${categoriesList || 'None'}</div>
+            <div class="flex flex-wrap gap-1">${categoriesList}</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex flex-wrap gap-1">${competitorsList || 'None'}</div>
+            <div class="flex flex-wrap gap-1">${competitorsList}</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
             ${formatDate(customer.lastVisit)}
@@ -1161,10 +1711,71 @@
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm font-medium text-gray-900">${customerCount}</div>
           </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right">
+            <button class="view-tracking-btn bg-blue-600 text-white py-1 px-2 rounded text-xs" data-id="${user.id}">View on Map</button>
+          </td>
         `;
         
         tableBody.appendChild(row);
       });
+      
+      // Add event listeners to buttons
+      document.querySelectorAll('.view-tracking-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const userId = this.getAttribute('data-id');
+          viewSalespersonTracking(userId);
+        });
+      });
+      
+      // Update tracking salesperson dropdown
+      const trackingSalesperson = document.getElementById('trackingSalesperson');
+      if (trackingSalesperson) {
+        // Clear existing options except the first one
+        while (trackingSalesperson.options.length > 1) {
+          trackingSalesperson.remove(1);
+        }
+        
+        // Add salesperson options
+        salespersons.forEach(user => {
+          if (user.tracking && user.tracking.length > 0) {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = user.fullName;
+            trackingSalesperson.appendChild(option);
+          }
+        });
+      }
+    }
+    
+    // View salesperson tracking on map
+    function viewSalespersonTracking(userId) {
+      // Switch to map tab
+      switchTab('map-tab');
+      
+      // Select the salesperson in the dropdown
+      const trackingSalesperson = document.getElementById('trackingSalesperson');
+      if (trackingSalesperson) {
+        trackingSalesperson.value = userId;
+      }
+      
+      // Enable path display
+      const showSalespersonPaths = document.getElementById('showSalespersonPaths');
+      if (showSalespersonPaths) {
+        showSalespersonPaths.checked = true;
+      }
+      
+      // Refresh markers
+      refreshSalespersonMarkers();
+      
+      // Find the salesperson
+      const salesperson = data.users.find(user => user.id === userId);
+      if (salesperson && salesperson.tracking && salesperson.tracking.length > 0) {
+        // Get the latest position
+        const latestPosition = salesperson.tracking[salesperson.tracking.length - 1];
+        
+        // Center map on salesperson
+        map.setView([latestPosition.lat, latestPosition.lng], 12);
+      }
     }
     
     // Update competitor checkboxes
@@ -1213,6 +1824,55 @@
       });
     }
     
+    // Setup customer name autocomplete
+    function setupCustomerNameAutocomplete() {
+      const input = document.getElementById('customerName');
+      const dropdown = document.getElementById('customerNameDropdown');
+      
+      input.addEventListener('input', function() {
+        const value = this.value.toLowerCase();
+        
+        if (value.length < 2) {
+          dropdown.classList.add('hidden');
+          return;
+        }
+        
+        // Filter suggestions
+        const filteredSuggestions = customerSuggestions.filter(suggestion => 
+          suggestion.toLowerCase().includes(value)
+        );
+        
+        // Update dropdown
+        dropdown.innerHTML = '';
+        
+        if (filteredSuggestions.length > 0) {
+          filteredSuggestions.forEach(suggestion => {
+            const item = document.createElement('div');
+            item.className = 'dropdown-item';
+            item.textContent = suggestion;
+            
+            item.addEventListener('click', function() {
+              input.value = suggestion;
+              dropdown.classList.add('hidden');
+            });
+            
+            dropdown.appendChild(item);
+          });
+          
+          dropdown.classList.remove('hidden');
+        } else {
+          dropdown.classList.add('hidden');
+        }
+      });
+      
+      // Hide dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+        if (e.target !== input && e.target !== dropdown) {
+          dropdown.classList.add('hidden');
+        }
+      });
+    }
+    
     // Edit customer
     function editCustomer(customerId) {
       const customer = data.customers.find(c => c.id === customerId);
@@ -1234,12 +1894,12 @@
       
       // Check category checkboxes
       document.querySelectorAll('input[name="customerCategory"]').forEach(checkbox => {
-        checkbox.checked = customer.categories.includes(checkbox.value);
+        checkbox.checked = customer.categories && customer.categories.includes(checkbox.value);
       });
       
       // Check competitor checkboxes
       document.querySelectorAll('#competitorCheckboxes input[type="checkbox"]').forEach(checkbox => {
-        checkbox.checked = customer.competitorIds.includes(checkbox.value);
+        checkbox.checked = customer.competitorIds && customer.competitorIds.includes(checkbox.value);
       });
       
       // Show form
@@ -1254,13 +1914,16 @@
       if (confirm('Are you sure you want to delete this customer?')) {
         try {
           // Delete from Firebase
-          await db.collection('customers').doc(id).delete();
+          await window.firestoreDeleteDoc(window.firestoreDoc(window.db, 'customers', id));
           
           // Remove from local data
           const index = data.customers.findIndex(c => c.id === id);
           if (index !== -1) {
             data.customers.splice(index, 1);
           }
+          
+          // Update customer suggestions
+          customerSuggestions = data.customers.map(customer => customer.name);
           
           // If we're currently editing this customer, reset the form
           if (document.getElementById('customerId').value === id) {
@@ -1317,7 +1980,7 @@
       if (confirm('Are you sure you want to delete this competitor?')) {
         try {
           // Delete from Firebase
-          await db.collection('competitors').doc(id).delete();
+          await window.firestoreDeleteDoc(window.firestoreDoc(window.db, 'competitors', id));
           
           // Remove from local data
           const index = data.competitors.findIndex(c => c.id === id);
@@ -1385,7 +2048,7 @@
       if (confirm('Are you sure you want to delete this user?')) {
         try {
           // Delete from Firebase
-          await db.collection('users').doc(id).delete();
+          await window.firestoreDeleteDoc(window.firestoreDoc(window.db, 'users', id));
           
           // Remove from local data
           const index = data.users.findIndex(u => u.id === id);
@@ -1461,20 +2124,22 @@
         categories: categories,
         remarks: remarks,
         lastVisit: lastVisit || null,
-        nextVisit: nextVisit || null,
-        addedBy: currentUser.id,
-        addedOn: new Date().toISOString()
+        nextVisit: nextVisit || null
       };
       
       try {
         // Check if editing or creating new
         if (customerId) {
           // Update existing customer
-          await db.collection('customers').doc(customerId).update(customerData);
+          await window.firestoreUpdateDoc(window.firestoreDoc(window.db, 'customers', customerId), customerData);
           
           // Update local data
           const index = data.customers.findIndex(c => c.id === customerId);
           if (index !== -1) {
+            // Preserve addedBy and addedOn
+            customerData.addedBy = data.customers[index].addedBy;
+            customerData.addedOn = data.customers[index].addedOn;
+            
             data.customers[index] = {
               id: customerId,
               ...customerData
@@ -1484,8 +2149,12 @@
           // Reset form
           cancelEdit();
         } else {
+          // Add addedBy and addedOn for new customer
+          customerData.addedBy = currentUser.id;
+          customerData.addedOn = new Date().toISOString();
+          
           // Create new customer
-          const docRef = await db.collection('customers').add(customerData);
+          const docRef = await window.firestoreAddDoc(window.firestoreCollection(window.db, 'customers'), customerData);
           
           // Add to local data
           data.customers.push({
@@ -1494,16 +2163,11 @@
           });
           
           // Reset form
-          document.getElementById('customerName').value = '';
-          document.getElementById('customerContact').value = '';
-          document.getElementById('customerRemarks').value = '';
-          document.getElementById('lastVisitDate').value = '';
-          document.getElementById('nextVisitDate').value = '';
-          
-          // Uncheck all checkboxes
-          document.querySelectorAll('#competitorCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
-          document.querySelectorAll('input[name="customerCategory"]').forEach(cb => cb.checked = false);
+          cancelEdit();
         }
+        
+        // Update customer suggestions
+        customerSuggestions = data.customers.map(customer => customer.name);
         
         // Refresh display
         refreshMarkers();
@@ -1544,7 +2208,7 @@
         // Check if editing or creating new
         if (competitorId) {
           // Update existing competitor
-          await db.collection('competitors').doc(competitorId).update(competitorData);
+          await window.firestoreUpdateDoc(window.firestoreDoc(window.db, 'competitors', competitorId), competitorData);
           
           // Update local data
           const index = data.competitors.findIndex(c => c.id === competitorId);
@@ -1556,7 +2220,7 @@
           }
         } else {
           // Create new competitor
-          const docRef = await db.collection('competitors').add(competitorData);
+          const docRef = await window.firestoreAddDoc(window.firestoreCollection(window.db, 'competitors'), competitorData);
           
           // Add to local data
           data.competitors.push({
@@ -1613,7 +2277,7 @@
         // Check if editing or creating new
         if (userId) {
           // Update existing user
-          await db.collection('users').doc(userId).update(userData);
+          await window.firestoreUpdateDoc(window.firestoreDoc(window.db, 'users', userId), userData);
           
           // Update local data
           const index = data.users.findIndex(u => u.id === userId);
@@ -1649,16 +2313,22 @@
                 roleBadge.classList.add('bg-purple-100', 'text-purple-800');
                 document.getElementById('adminOnlySection').classList.remove('hidden');
                 document.getElementById('exportDiv').classList.remove('hidden');
+                document.getElementById('adminOnlyTab').classList.remove('hidden');
+                document.getElementById('adminTrackingControls').classList.remove('hidden');
+                document.getElementById('salespersonTrackingControls').classList.add('hidden');
               } else {
                 roleBadge.classList.add('bg-blue-100', 'text-blue-800');
                 document.getElementById('adminOnlySection').classList.add('hidden');
                 document.getElementById('exportDiv').classList.add('hidden');
+                document.getElementById('adminOnlyTab').classList.add('hidden');
+                document.getElementById('adminTrackingControls').classList.add('hidden');
+                document.getElementById('salespersonTrackingControls').classList.remove('hidden');
               }
             }
           }
         } else {
           // Create new user
-          const docRef = await db.collection('users').add(userData);
+          const docRef = await window.firestoreAddDoc(window.firestoreCollection(window.db, 'users'), userData);
           
           // Add to local data
           data.users.push({
@@ -1761,7 +2431,7 @@
       let csvContent = 'Name,Status,Contact,Latitude,Longitude,Categories,Competitors,Remarks,Last Visit,Next Visit\n';
       
       filteredCustomers.forEach(customer => {
-        const categories = customer.categories.join('; ');
+        const categories = customer.categories ? customer.categories.join('; ') : '';
         const competitors = getCompetitorNames(customer.competitorIds).join('; ');
         
         // Escape fields that might contain commas
@@ -1801,276 +2471,84 @@
       // Check if geolocation is available
       if (!navigator.geolocation) {
         console.log('Geolocation is not supported by your browser');
+        alert('Geolocation is not supported by your browser');
         return;
       }
       
+      // Get tracking interval
+      const intervalSelect = document.getElementById('trackingInterval');
+      const intervalSeconds = parseInt(intervalSelect.value);
+      
+      // Update UI
+      document.getElementById('startTrackingBtn').disabled = true;
+      document.getElementById('stopTrackingBtn').disabled = false;
+      document.getElementById('trackingStatusIndicator').innerHTML = `
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+          Active
+        </span>
+      `;
+      
+      // Update tracking status display
+      const trackingStatus = document.getElementById('trackingStatus');
+      trackingStatus.classList.remove('hidden');
+      trackingStatus.innerHTML = `
+        <div class="status-indicator active"></div>
+        <span>Tracking active</span>
+      `;
+      
+      // Get initial position
+      updatePosition();
+      
       // Start tracking interval
-      trackingInterval = setInterval(() => {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const trackingData = {
-              timestamp: new Date().toISOString(),
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              status: 'Active'
-            };
-            
-            try {
-              // Find user in data
-              const userIndex = data.users.findIndex(u => u.id === currentUser.id);
-              
-              if (userIndex !== -1) {
-                // Initialize tracking array if it doesn't exist
-                if (!data.users[userIndex].tracking) {
-                  data.users[userIndex].tracking = [];
-                }
-                
-                // Add tracking data
-                data.users[userIndex].tracking.push(trackingData);
-                
-                // Limit tracking history to last 100 entries
-                if (data.users[userIndex].tracking.length > 100) {
-                  data.users[userIndex].tracking.shift();
-                }
-                
-                // Update in Firebase
-                await db.collection('users').doc(currentUser.id).update({
-                  tracking: data.users[userIndex].tracking
-                });
-                
-                // Update current user
-                currentUser = data.users[userIndex];
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                
-                console.log('Location updated');
-              }
-            } catch (error) {
-              console.error('Error updating location:', error);
-            }
-          },
-          (error) => {
-            console.error('Error getting location:', error);
+      trackingInterval = setInterval(updatePosition, intervalSeconds * 1000);
+    }
+    
+    // Update position
+    async function updatePosition() {
+      try {
+        const position = await getUserLocation();
+        
+        const trackingData = {
+          timestamp: new Date().toISOString(),
+          lat: position.lat,
+          lng: position.lng,
+          status: 'Active'
+        };
+        
+        // Find user in data
+        const userIndex = data.users.findIndex(u => u.id === currentUser.id);
+        
+        if (userIndex !== -1) {
+          // Initialize tracking array if it doesn't exist
+          if (!data.users[userIndex].tracking) {
+            data.users[userIndex].tracking = [];
           }
-        );
-      }, 60000); // Update every minute
+          
+          // Add tracking data
+          data.users[userIndex].tracking.push(trackingData);
+          
+          // Limit tracking history to last 100 entries
+          if (data.users[userIndex].tracking.length > 100) {
+            data.users[userIndex].tracking.shift();
+          }
+          
+          // Update in Firebase
+          await window.firestoreUpdateDoc(window.firestoreDoc(window.db, 'users', currentUser.id), {
+            tracking: data.users[userIndex].tracking
+          });
+          
+          // Update current user
+          currentUser = data.users[userIndex];
+          localStorage.setItem('currentUser', JSON.stringify(currentUser));
+          
+          console.log('Location updated');
+        }
+      } catch (error) {
+        console.error('Error updating location:', error);
+      }
     }
     
     // Stop tracking
     function stopTracking() {
-      if (trackingInterval) {
-        clearInterval(trackingInterval);
-        trackingInterval = null;
-      }
-    }
-    
-    // Switch tab
-    function switchTab(tabId) {
-      // Hide all tab contents
-      document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
-      });
-      
-      // Show selected tab content
-      document.getElementById(tabId).classList.add('active');
-      
-      // Update tab buttons
-      document.querySelectorAll('.tab-button').forEach(button => {
-        if (button.getAttribute('data-tab') === tabId) {
-          button.classList.add('border-blue-500', 'text-blue-600');
-          button.classList.remove('border-transparent', 'text-gray-500');
-        } else {
-          button.classList.remove('border-blue-500', 'text-blue-600');
-          button.classList.add('border-transparent', 'text-gray-500');
-        }
-      });
-    }
-    
-    // Setup event listeners
-    function setupListeners() {
-      // Tab buttons
-      document.querySelectorAll('.tab-button').forEach(button => {
-        button.addEventListener('click', function() {
-          const tabId = this.getAttribute('data-tab');
-          switchTab(tabId);
-        });
-      });
-      
-      // Map filters
-      document.getElementById('mapStatusFilter').addEventListener('change', refreshMarkers);
-      document.getElementById('mapCategoryFilter').addEventListener('change', refreshMarkers);
-      document.getElementById('mapCompetitorFilter').addEventListener('change', refreshMarkers);
-      document.getElementById('showCompetitors').addEventListener('change', refreshCompetitorMarkers);
-      document.getElementById('showSalespersons').addEventListener('change', refreshSalespersonMarkers);
-      
-      // Customer filters
-      document.getElementById('customerStatusFilter').addEventListener('change', renderCustomers);
-      document.getElementById('customerCategoryFilter').addEventListener('change', renderCustomers);
-      document.getElementById('customerCompetitorFilter').addEventListener('change', renderCustomers);
-      
-      // Customer form buttons
-      document.getElementById('addCustomerButton').addEventListener('click', function() {
-        document.getElementById('customerForm').classList.remove('hidden');
-      });
-      
-      document.getElementById('cancelCustomerButton').addEventListener('click', cancelEdit);
-      document.getElementById('saveCustomerButton').addEventListener('click', saveCustomer);
-      
-      // Competitor form buttons
-      document.getElementById('addCompetitorButton').addEventListener('click', function() {
-        document.getElementById('competitorForm').classList.remove('hidden');
-      });
-      
-      document.getElementById('cancelCompetitorButton').addEventListener('click', cancelCompetitorEdit);
-      document.getElementById('saveCompetitorButton').addEventListener('click', saveCompetitor);
-      
-      // User form buttons
-      document.getElementById('addUserButton').addEventListener('click', function() {
-        document.getElementById('userForm').classList.remove('hidden');
-      });
-      
-      document.getElementById('cancelUserButton').addEventListener('click', cancelUserEdit);
-      document.getElementById('saveUserButton').addEventListener('click', saveUser);
-      
-      // Export button
-      document.getElementById('exportCustomersButton').addEventListener('click', exportCustomersToCSV);
-      
-      // Logout button
-      document.getElementById('logoutButton').addEventListener('click', logout);
-    }
-    
-    // Setup login listeners
-    function setupLoginListeners() {
-      document.getElementById('loginButton').addEventListener('click', login);
-      
-      // Allow login with Enter key
-      document.getElementById('password').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-          login();
-        }
-      });
-    }
-    
-    // Login function
-    async function login() {
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
-      
-      if (!username || !password) {
-        document.getElementById('loginError').textContent = 'Please enter username and password';
-        document.getElementById('loginError').classList.remove('hidden');
-        return;
-      }
-      
-      try {
-        // Load users if not loaded yet
-        if (data.users.length === 0) {
-          await loadFromFirebase();
-        }
-        
-        // Find user
-        const user = data.users.find(u => u.username === username && u.password === password);
-        
-        if (user) {
-          currentUser = user;
-          loginSuccess();
-        } else {
-          document.getElementById('loginError').textContent = 'Invalid username or password';
-          document.getElementById('loginError').classList.remove('hidden');
-        }
-      } catch (error) {
-        console.error("Login error:", error);
-        document.getElementById('loginError').textContent = 'An error occurred. Please try again.';
-        document.getElementById('loginError').classList.remove('hidden');
-      }
-    }
-    
-    // Login success
-    async function loginSuccess() {
-      isAuthenticated = true;
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
-      
-      document.getElementById('loginOverlay').classList.add('hidden');
-      document.getElementById('mainContent').classList.remove('hidden');
-      
-      // Set user display
-      document.getElementById('currentUserDisplay').textContent = currentUser.fullName;
-      
-      // Set role badge
-      const roleBadge = document.getElementById('userRoleBadge');
-      if (currentUser.role === 'admin') {
-        roleBadge.textContent = 'Administrator';
-        roleBadge.classList.add('bg-purple-100', 'text-purple-800');
-        document.getElementById('adminOnlySection').classList.remove('hidden');
-        document.getElementById('exportDiv').classList.remove('hidden');
-      } else {
-        roleBadge.textContent = 'Salesperson';
-        roleBadge.classList.add('bg-blue-100', 'text-blue-800');
-        document.getElementById('adminOnlySection').classList.add('hidden');
-        document.getElementById('exportDiv').classList.add('hidden');
-      }
-      
-      // Initialize the app
-      initMap();
-      await loadFromFirebase(); // Load data from Firebase
-      setupListeners();
-      updateCompetitorCheckboxes();
-      updateFilterDropdowns();
-      renderCustomers();
-      renderCompetitors();
-      refreshMarkers();
-      
-      if (currentUser.role === 'admin') {
-        renderUsers();
-        renderSalespersons();
-      }
-      
-      // Start tracking for salespersons
-      if (currentUser.role === 'salesperson') {
-        startTracking();
-      }
-    }
-    
-    // Logout function
-    function logout() {
-      isAuthenticated = false;
-      currentUser = null;
-      localStorage.removeItem('isAuthenticated');
-      localStorage.removeItem('currentUser');
-      
-      // Stop tracking if active
-      stopTracking();
-      
-      // Reset forms
-      cancelEdit();
-      cancelCompetitorEdit();
-      cancelUserEdit();
-      
-      // Show login overlay
-      document.getElementById('loginOverlay').classList.remove('hidden');
-      document.getElementById('mainContent').classList.add('hidden');
-      document.getElementById('loginError').classList.add('hidden');
-      document.getElementById('username').value = '';
-      document.getElementById('password').value = '';
-    }
-    
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      setupLoginListeners();
-      
-      // Check if already logged in
-      const savedAuth = localStorage.getItem('isAuthenticated');
-      const savedUser = localStorage.getItem('currentUser');
-      if (savedAuth === 'true' && savedUser) {
-        try {
-          currentUser = JSON.parse(savedUser);
-          loginSuccess();
-        } catch (e) {
-          console.error("Error parsing saved user:", e);
-          logout();
-        }
-      }
-    });
-  </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96652976550c545a',t:'MTc1MzcxMzk0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-</html>
+      if (trackingInterval)<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96657d06114b5452',t:'MTc1MzcxNzM3MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
