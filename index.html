@@ -1,2045 +1,2076 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Al Cham Chemical Plant - Territory Tracking</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <style>
-        #map {
-            height: 500px;
-            width: 100%;
-        }
-        .color-circle {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            margin-right: 5px;
-            vertical-align: middle;
-            border: 1px solid #ccc;
-        }
-        .login-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .login-container {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 0.5rem;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        .remarks-cell {
-            max-width: 200px;
-            white-space: normal;
-            word-wrap: break-word;
-        }
-        .location-btn {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 10;
-        }
-        .competitor-tag {
-            display: inline-block;
-            padding: 2px 8px;
-            margin: 2px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            color: white;
-        }
-        .competitor-checkbox {
-            margin-right: 5px;
-        }
-        .competitor-option {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-            padding: 4px;
-            border-radius: 4px;
-        }
-        .competitor-option:hover {
-            background-color: #f3f4f6;
-        }
-        .category-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            margin: 2px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-        }
-        .category-paints {
-            background-color: #e0f2fe;
-            color: #0369a1;
-        }
-        .category-alkyde {
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-        .category-cosmetics {
-            background-color: #fce7f3;
-            color: #be185d;
-        }
-        .tracking-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: #10b981;
-            display: inline-block;
-            margin-right: 5px;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-            }
-            70% {
-                transform: scale(1);
-                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
-            }
-            100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-            }
-        }
-        .salesperson-marker {
-            animation: bounce 1s infinite alternate;
-        }
-        @keyframes bounce {
-            from {
-                transform: translateY(0);
-            }
-            to {
-                transform: translateY(-10px);
-            }
-        }
-    </style>
-    <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Al Cham Chemical Plant - Territory Tracking</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script>
+    // Your Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCMSPqRbQaBqHA2NsdlUc2nOaPx9XxBH2E",
+      authDomain: "backend-b4231.firebaseapp.com",
+      projectId: "backend-b4231",
+      storageBucket: "backend-b4231.firebasestorage.app",
+      messagingSenderId: "938964208227",
+      appId: "1:938964208227:web:d14d7c45a83027eeb34656",
+      measurementId: "G-LVG8XR2067"
+    };
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyCMSPqRbQaBqHA2NsdlUc2nOaPx9XxBH2E",
-    authDomain: "backend-b4231.firebaseapp.com",
-    projectId: "backend-b4231",
-    storageBucket: "backend-b4231.firebasestorage.app",
-    messagingSenderId: "938964208227",
-    appId: "1:938964208227:web:d14d7c45a83027eeb34656",
-    measurementId: "G-LVG8XR2067"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+  </script>
+  
+  <style>
+    #map {
+      height: 600px;
+      width: 100%;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .custom-marker {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 30px;
+      color: white;
+      font-weight: bold;
+      border: 2px solid white;
+    }
+    .status-active {
+      background-color: #10B981;
+    }
+    .status-inactive {
+      background-color: #6B7280;
+    }
+    .status-hard {
+      background-color: #EF4444;
+    }
+    .status-potential {
+      background-color: #F59E0B;
+    }
+    .competitor-marker {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+    .salesperson-marker {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background-color: #3B82F6;
+      border: 2px solid white;
+      text-align: center;
+      line-height: 25px;
+      color: white;
+      font-weight: bold;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 p-4">
-    <!-- Login Overlay -->
-    <div id="loginOverlay" class="login-overlay">
-        <div class="login-container">
-            <h2 class="text-2xl font-bold text-emerald-600 mb-4">Al Cham Chemical Plant</h2>
-            <h3 class="text-lg font-semibold mb-4">Login</h3>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                    <input type="text" id="loginUsername" class="w-full border rounded p-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" id="loginPassword" class="w-full border rounded p-2">
-                </div>
-                <div id="loginError" class="text-red-600 hidden">Invalid username or password</div>
-                <div>
-                    <button id="loginButton" class="w-full bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">
-                        Sign In
-                    </button>
-                </div>
-            </div>
-        </div>
+<body class="bg-gray-100">
+  <!-- Login Overlay -->
+  <div id="loginOverlay" class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-96">
+      <div class="flex justify-center mb-6">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiBjbGFzcz0idy0xNiBoLTE2Ij48cGF0aCBmaWxsPSIjMzg4MmY2IiBkPSJNMTI4IDI0YTEwNCAxMDQgMCAxIDAgMTA0IDEwNEExMDQuMTEgMTA0LjExIDAgMCAwIDEyOCAyNFptMCAxOTJhODggODggMCAxIDEgODgtODggODguMSA4OC4xIDAgMCAxLTg4IDg4WiIvPjxwYXRoIGZpbGw9IiMzODgyZjYiIGQ9Ik0xMjggNzJhNTYgNTYgMCAwIDAgMCAxMTIgNTYgNTYgMCAwIDAgMC0xMTJabTAgOTZhNDAgNDAgMCAxIDEgNDAtNDAgNDAuMDUgNDAuMDUgMCAwIDEtNDAgNDBaIi8+PHBhdGggZmlsbD0iIzM4ODJmNiIgZD0iTTEyOCAxMDRhMjQgMjQgMCAxIDAgMjQgMjQgMjQgMjQgMCAwIDAtMjQtMjRaIi8+PC9zdmc+" alt="Logo" class="w-16 h-16">
+      </div>
+      <h2 class="text-2xl font-bold text-center mb-6">Al Cham Chemical Plant</h2>
+      <div class="mb-4">
+        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+        <input type="text" id="username" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div class="mb-6">
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+        <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <button id="loginButton" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        Login
+      </button>
+      <div id="loginError" class="mt-4 text-red-600 text-sm text-center hidden"></div>
     </div>
+  </div>
 
-    <!-- Main Content (hidden until login) -->
-    <div id="mainContent" class="hidden">
-        <div class="flex justify-between items-center mb-4">
-            <div class="flex items-center">
-                <h1 class="text-2xl font-bold text-emerald-600">Al Cham Chemical Plant - Territory Tracking</h1>
-                <div id="userRoleBadge" class="ml-4 px-3 py-1 rounded-full text-xs font-medium"></div>
+  <!-- Main Content -->
+  <div id="mainContent" class="hidden">
+    <!-- Header -->
+    <header class="bg-white shadow">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div class="flex items-center">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiBjbGFzcz0idy0xNiBoLTE2Ij48cGF0aCBmaWxsPSIjMzg4MmY2IiBkPSJNMTI4IDI0YTEwNCAxMDQgMCAxIDAgMTA0IDEwNEExMDQuMTEgMTA0LjExIDAgMCAwIDEyOCAyNFptMCAxOTJhODggODggMCAxIDEgODgtODggODguMSA4OC4xIDAgMCAxLTg4IDg4WiIvPjxwYXRoIGZpbGw9IiMzODgyZjYiIGQ9Ik0xMjggNzJhNTYgNTYgMCAwIDAgMCAxMTIgNTYgNTYgMCAwIDAgMC0xMTJabTAgOTZhNDAgNDAgMCAxIDEgNDAtNDAgNDAuMDUgNDAuMDUgMCAwIDEtNDAgNDBaIi8+PHBhdGggZmlsbD0iIzM4ODJmNiIgZD0iTTEyOCAxMDRhMjQgMjQgMCAxIDAgMjQgMjQgMjQgMjQgMCAwIDAtMjQtMjRaIi8+PC9zdmc+" alt="Logo" class="w-10 h-10 mr-2">
+          <h1 class="text-xl font-bold text-gray-900">Al Cham Chemical Plant</h1>
+        </div>
+        <div class="flex items-center">
+          <div class="mr-4 text-right">
+            <span class="block text-sm text-gray-700" id="currentUserDisplay">User Name</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" id="userRoleBadge">
+              Role
+            </span>
+          </div>
+          <button id="logoutButton" class="bg-gray-200 text-gray-700 py-1 px-3 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm">
+            Logout
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <!-- Tabs -->
+      <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex space-x-8">
+          <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600" data-tab="map-tab">
+            Map View
+          </button>
+          <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="customers-tab">
+            Customers
+          </button>
+          <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="competitors-tab">
+            Competitors
+          </button>
+          <button id="adminOnlyTab" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="users-tab">
+            Users
+          </button>
+        </nav>
+      </div>
+
+      <!-- Map Tab -->
+      <div id="map-tab" class="tab-content active">
+        <div class="bg-white shadow rounded-lg p-6 mb-6">
+          <h2 class="text-lg font-medium text-gray-900 mb-4">Territory Map</h2>
+          
+          <!-- Map Filters -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <label for="mapStatusFilter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select id="mapStatusFilter" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="hard">Hard</option>
+                <option value="potential">Potential</option>
+              </select>
             </div>
-            <div class="flex items-center">
-                <span id="currentUserDisplay" class="mr-4 font-medium"></span>
-                <button id="logoutButton" class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
-                    Logout
+            <div>
+              <label for="mapCategoryFilter" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <select id="mapCategoryFilter" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="all">All Categories</option>
+                <option value="paints">Paints</option>
+                <option value="alkyde">Alkyde</option>
+                <option value="cosmetics">Cosmetics</option>
+              </select>
+            </div>
+            <div>
+              <label for="mapCompetitorFilter" class="block text-sm font-medium text-gray-700 mb-1">Competitor</label>
+              <select id="mapCompetitorFilter" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="all">All Competitors</option>
+                <!-- Competitor options will be added dynamically -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Show</label>
+              <div class="flex space-x-4">
+                <label class="inline-flex items-center">
+                  <input type="checkbox" id="showCompetitors" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                  <span class="ml-2 text-sm text-gray-700">Competitors</span>
+                </label>
+                <label class="inline-flex items-center">
+                  <input type="checkbox" id="showSalespersons" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                  <span class="ml-2 text-sm text-gray-700">Salespersons</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Map Container -->
+          <div id="map" class="rounded-lg overflow-hidden"></div>
+        </div>
+      </div>
+
+      <!-- Customers Tab -->
+      <div id="customers-tab" class="tab-content">
+        <div class="bg-white shadow rounded-lg p-6 mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-medium text-gray-900">Customers</h2>
+            <button id="addCustomerButton" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm">
+              Add Customer
+            </button>
+          </div>
+          
+          <!-- Customer Filters -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label for="customerStatusFilter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select id="customerStatusFilter" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="hard">Hard</option>
+                <option value="potential">Potential</option>
+              </select>
+            </div>
+            <div>
+              <label for="customerCategoryFilter" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <select id="customerCategoryFilter" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="all">All Categories</option>
+                <option value="paints">Paints</option>
+                <option value="alkyde">Alkyde</option>
+                <option value="cosmetics">Cosmetics</option>
+              </select>
+            </div>
+            <div>
+              <label for="customerCompetitorFilter" class="block text-sm font-medium text-gray-700 mb-1">Competitor</label>
+              <select id="customerCompetitorFilter" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="all">All Competitors</option>
+                <!-- Competitor options will be added dynamically -->
+              </select>
+            </div>
+          </div>
+          
+          <!-- Customer Form -->
+          <div id="customerForm" class="bg-gray-50 p-4 rounded-md mb-6 hidden">
+            <h3 class="text-md font-medium text-gray-900 mb-4" id="customerFormTitle">Add New Customer</h3>
+            <input type="hidden" id="customerId">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label for="customerName" class="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                <input type="text" id="customerName" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              </div>
+              <div>
+                <label for="customerStatus" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select id="customerStatus" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="hard">Hard</option>
+                  <option value="potential">Potential</option>
+                </select>
+              </div>
+              <div>
+                <label for="customerContact" class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+                <input type="text" id="customerContact" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="customerLat" class="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
+                  <input type="text" id="customerLat" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label for="customerLng" class="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
+                  <input type="text" id="customerLng" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Categories</label>
+                <div class="flex flex-wrap gap-4">
+                  <label class="inline-flex items-center">
+                    <input type="checkbox" name="customerCategory" value="paints" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span class="ml-2 text-sm text-gray-700">Paints</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="checkbox" name="customerCategory" value="alkyde" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span class="ml-2 text-sm text-gray-700">Alkyde</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="checkbox" name="customerCategory" value="cosmetics" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span class="ml-2 text-sm text-gray-700">Cosmetics</span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Competitors</label>
+                <div id="competitorCheckboxes" class="flex flex-wrap gap-4">
+                  <!-- Competitor checkboxes will be added dynamically -->
+                </div>
+              </div>
+              <div class="md:col-span-2">
+                <label for="customerRemarks" class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                <textarea id="customerRemarks" rows="2" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+              </div>
+              <div>
+                <label for="lastVisitDate" class="block text-sm font-medium text-gray-700 mb-1">Last Visit Date</label>
+                <input type="date" id="lastVisitDate" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              </div>
+              <div>
+                <label for="nextVisitDate" class="block text-sm font-medium text-gray-700 mb-1">Next Visit Date</label>
+                <input type="date" id="nextVisitDate" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              </div>
+            </div>
+            <div class="flex justify-end space-x-3">
+              <button id="cancelCustomerButton" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm">
+                Cancel
+              </button>
+              <button id="saveCustomerButton" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm">
+                Save Customer
+              </button>
+            </div>
+          </div>
+          
+          <!-- Customer Table -->
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categories</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Competitors</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Visit</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Visit</th>
+                  <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="customerTableBody" class="bg-white divide-y divide-gray-200">
+                <!-- Customer rows will be added dynamically -->
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Export Button -->
+          <div id="exportDiv" class="mt-4 flex justify-end">
+            <button id="exportCustomersButton" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-sm">
+              Export to CSV
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Competitors Tab -->
+      <div id="competitors-tab" class="tab-content">
+        <div class="bg-white shadow rounded-lg p-6 mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-medium text-gray-900">Competitors</h2>
+            <button id="addCompetitorButton" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm">
+              Add Competitor
+            </button>
+          </div>
+          
+          <!-- Competitor Form -->
+          <div id="competitorForm" class="bg-gray-50 p-4 rounded-md mb-6 hidden">
+            <h3 class="text-md font-medium text-gray-900 mb-4" id="competitorFormTitle">Add New Competitor</h3>
+            <input type="hidden" id="competitorId">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label for="competitorName" class="block text-sm font-medium text-gray-700 mb-1">Competitor Name</label>
+                <input type="text" id="competitorName" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              </div>
+              <div>
+                <label for="competitorLocation" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <input type="text" id="competitorLocation" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              </div>
+              <div>
+                <label for="competitorProducts" class="block text-sm font-medium text-gray-700 mb-1">Products</label>
+                <input type="text" id="competitorProducts" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              </div>
+              <div>
+                <label for="competitorColor" class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                <input type="color" id="competitorColor" class="w-full h-10 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" value="#FF5733">
+              </div>
+            </div>
+            <div class="flex justify-end space-x-3">
+              <button id="cancelCompetitorButton" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm">
+                Cancel
+              </button>
+              <button id="saveCompetitorButton" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm">
+                Save Competitor
+              </button>
+            </div>
+          </div>
+          
+          <!-- Competitor Table -->
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Products</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
+                  <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="competitorTableBody" class="bg-white divide-y divide-gray-200">
+                <!-- Competitor rows will be added dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Users Tab -->
+      <div id="users-tab" class="tab-content">
+        <div id="adminOnlySection">
+          <div class="bg-white shadow rounded-lg p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-medium text-gray-900">Users</h2>
+              <button id="addUserButton" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm">
+                Add User
+              </button>
+            </div>
+            
+            <!-- User Form -->
+            <div id="userForm" class="bg-gray-50 p-4 rounded-md mb-6 hidden">
+              <h3 class="text-md font-medium text-gray-900 mb-4" id="userFormTitle">Add New User</h3>
+              <input type="hidden" id="userId">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label for="userFullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <input type="text" id="userFullName" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label for="userUsername" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                  <input type="text" id="userUsername" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label for="userPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <input type="password" id="userPassword" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label for="userRole" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <select id="userRole" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="admin">Administrator</option>
+                    <option value="salesperson">Salesperson</option>
+                  </select>
+                </div>
+              </div>
+              <div class="flex justify-end space-x-3">
+                <button id="cancelUserButton" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm">
+                  Cancel
                 </button>
-            </div>
-        </div>
-        
-        <!-- Admin Only Section -->
-        <div id="adminOnlySection" class="hidden">
-            <!-- Salesperson Tracking -->
-            <div class="bg-white p-4 rounded shadow mb-4">
-                <h2 class="text-lg font-semibold mb-2">Salesperson Tracking</h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead>
-                            <tr class="border-b">
-                                <th class="text-left p-2">Name</th>
-                                <th class="text-left p-2">Status</th>
-                                <th class="text-left p-2">Last Location</th>
-                                <th class="text-left p-2">Last Update</th>
-                                <th class="text-left p-2">Customers Added Today</th>
-                                <th class="text-left p-2">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="salespersonTableBody">
-                            <!-- Salesperson rows will be populated here -->
-                        </tbody>
-                    </table>
-                </div>
+                <button id="saveUserButton" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm">
+                  Save User
+                </button>
+              </div>
             </div>
             
-            <!-- Competitor Form -->
-            <div class="bg-white p-4 rounded shadow mb-4">
-                <h2 class="text-lg font-semibold mb-2">Add Competitor</h2>
-                <div class="space-y-3">
-                    <input type="hidden" id="competitorId" value="">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Competitor Name</label>
-                        <input type="text" id="competitorName" class="w-full border rounded p-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                        <input type="text" id="competitorLocation" class="w-full border rounded p-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Products</label>
-                        <input type="text" id="competitorProducts" class="w-full border rounded p-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
-                        <div class="flex flex-wrap gap-2">
-                            <div class="flex items-center">
-                                <input type="radio" id="color1" name="competitorColor" value="#FF5733" checked>
-                                <label for="color1"><span class="color-circle ml-1" style="background-color: #FF5733;"></span></label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="color2" name="competitorColor" value="#33FF57">
-                                <label for="color2"><span class="color-circle ml-1" style="background-color: #33FF57;"></span></label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="color3" name="competitorColor" value="#3357FF">
-                                <label for="color3"><span class="color-circle ml-1" style="background-color: #3357FF;"></span></label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="color4" name="competitorColor" value="#F3FF33">
-                                <label for="color4"><span class="color-circle ml-1" style="background-color: #F3FF33;"></span></label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="color5" name="competitorColor" value="#FF33F3">
-                                <label for="color5"><span class="color-circle ml-1" style="background-color: #FF33F3;"></span></label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="color6" name="competitorColor" value="#33FFF3">
-                                <label for="color6"><span class="color-circle ml-1" style="background-color: #33FFF3;"></span></label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="color7" name="competitorColor" value="#8B4513">
-                                <label for="color7"><span class="color-circle ml-1" style="background-color: #8B4513;"></span></label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="color8" name="competitorColor" value="#800080">
-                                <label for="color8"><span class="color-circle ml-1" style="background-color: #800080;"></span></label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="color9" name="competitorColor" value="#008080">
-                                <label for="color9"><span class="color-circle ml-1" style="background-color: #008080;"></span></label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="color10" name="competitorColor" value="#FF8C00">
-                                <label for="color10"><span class="color-circle ml-1" style="background-color: #FF8C00;"></span></label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button id="saveCompetitorBtn" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">Save Competitor</button>
-                        <button id="cancelCompetitorEditBtn" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 hidden">Cancel Edit</button>
-                    </div>
-                </div>
-                
-                <!-- Competitor List -->
-                <div class="mt-4">
-                    <h3 class="text-md font-semibold mb-2">Competitors List</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b">
-                                    <th class="text-left p-2">Name</th>
-                                    <th class="text-left p-2">Color</th>
-                                    <th class="text-left p-2">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="competitorTableBody">
-                                <!-- Competitor rows will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- User Management -->
-            <div class="bg-white p-4 rounded shadow mb-4">
-                <h2 class="text-lg font-semibold mb-2">User Management</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <h3 class="text-md font-semibold mb-2">Add/Edit User</h3>
-                        <div class="space-y-3">
-                            <input type="hidden" id="userId" value="">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                                <input type="text" id="username" class="w-full border rounded p-2">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                                <input type="password" id="password" class="w-full border rounded p-2">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                <input type="text" id="fullName" class="w-full border rounded p-2">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                                <select id="userRole" class="w-full border rounded p-2">
-                                    <option value="admin">Admin</option>
-                                    <option value="salesperson">Salesperson</option>
-                                </select>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button id="saveUserBtn" class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">Save User</button>
-                                <button id="cancelUserEditBtn" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 hidden">Cancel Edit</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="text-md font-semibold mb-2">Users List</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full">
-                                <thead>
-                                    <tr class="border-b">
-                                        <th class="text-left p-2">Username</th>
-                                        <th class="text-left p-2">Full Name</th>
-                                        <th class="text-left p-2">Role</th>
-                                        <th class="text-left p-2">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="userTableBody">
-                                    <!-- User rows will be populated here -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Customer Form -->
-        <div class="bg-white p-4 rounded shadow mb-4">
-            <h2 class="text-lg font-semibold mb-2">Add Customer</h2>
-            <div class="space-y-3">
-                <input type="hidden" id="customerId" value="">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
-                    <input type="text" id="customerName" class="w-full border rounded p-2">
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select id="customerStatus" class="w-full border rounded p-2">
-                            <option value="active">Active</option>
-                            <option value="possible">Possible</option>
-                            <option value="hard">Hard</option>
-                            <option value="not_possible">Not Possible</option>
-                            <option value="stopped">Stopped</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                        <div class="flex flex-wrap gap-2 mt-1">
-                            <label class="inline-flex items-center">
-                                <input type="checkbox" name="customerCategory" value="paints" class="mr-1">
-                                <span>Paints</span>
-                            </label>
-                            <label class="inline-flex items-center">
-                                <input type="checkbox" name="customerCategory" value="alkyde" class="mr-1">
-                                <span>Alkyde</span>
-                            </label>
-                            <label class="inline-flex items-center">
-                                <input type="checkbox" name="customerCategory" value="cosmetics" class="mr-1">
-                                <span>Cosmetics</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Competitors</label>
-                    <div id="competitorCheckboxes" class="border rounded p-2 max-h-40 overflow-y-auto">
-                        <!-- Competitor checkboxes will be populated here -->
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
-                    <input type="text" id="customerContact" class="w-full border rounded p-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
-                    <textarea id="customerRemarks" class="w-full border rounded p-2" rows="2"></textarea>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Last Visited Date</label>
-                        <input type="date" id="lastVisitDate" class="w-full border rounded p-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Next Visit Date</label>
-                        <input type="date" id="nextVisitDate" class="w-full border rounded p-2">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2 relative">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
-                        <input type="text" id="customerLat" class="w-full border rounded p-2" value="35.0">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
-                        <input type="text" id="customerLng" class="w-full border rounded p-2" value="38.0">
-                    </div>
-                    <button id="getLocationBtn" class="location-btn bg-blue-500 text-white p-1 rounded text-xs" title="Use my current location">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                    </button>
-                </div>
-                <div class="flex space-x-2">
-                    <button id="saveCustomerBtn" class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">Save Customer</button>
-                    <button id="cancelEditBtn" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 hidden">Cancel Edit</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Filter and Export -->
-        <div class="bg-white p-4 rounded shadow mb-4">
-            <div class="flex flex-wrap items-center gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Competitor</label>
-                    <select id="filterCompetitor" class="border rounded p-2">
-                        <option value="all">Show All</option>
-                        <option value="none">No Competitor</option>
-                        <!-- Competitor options will be populated here -->
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
-                    <select id="filterStatus" class="border rounded p-2">
-                        <option value="all">Show All</option>
-                        <option value="active">Active</option>
-                        <option value="possible">Possible</option>
-                        <option value="hard">Hard</option>
-                        <option value="not_possible">Not Possible</option>
-                        <option value="stopped">Stopped</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Category</label>
-                    <select id="filterCategory" class="border rounded p-2">
-                        <option value="all">Show All</option>
-                        <option value="paints">Paints</option>
-                        <option value="alkyde">Alkyde</option>
-                        <option value="cosmetics">Cosmetics</option>
-                    </select>
-                </div>
-                <div id="exportDiv" class="ml-auto">
-                    <button id="exportCsvBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                        Export to CSV
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Map -->
-        <div id="map" class="rounded shadow mb-4"></div>
-        
-        <!-- Customer List -->
-        <div class="bg-white p-4 rounded shadow">
-            <h2 class="text-lg font-semibold mb-2">Customers</h2>
+            <!-- User Table -->
             <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b">
-                            <th class="text-left p-2">Name</th>
-                            <th class="text-left p-2">Status</th>
-                            <th class="text-left p-2">Category</th>
-                            <th class="text-left p-2">Competitors</th>
-                            <th class="text-left p-2">Location</th>
-                            <th class="text-left p-2">Last Visit</th>
-                            <th class="text-left p-2">Next Visit</th>
-                            <th class="text-left p-2">Remarks</th>
-                            <th class="text-left p-2">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="customerTableBody">
-                        <!-- Customer rows will be populated here -->
-                    </tbody>
-                </table>
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="userTableBody" class="bg-white divide-y divide-gray-200">
+                  <!-- User rows will be added dynamically -->
+                </tbody>
+              </table>
             </div>
+          </div>
+          
+          <!-- Salesperson Tracking -->
+          <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Salesperson Tracking</h2>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customers</th>
+                  </tr>
+                </thead>
+                <tbody id="salespersonTableBody" class="bg-white divide-y divide-gray-200">
+                  <!-- Salesperson rows will be added dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-    </div>
+      </div>
+    </main>
+  </div>
 
-    <script>
-        // Simple data structure
-        const data = {
-            customers: [
-                {
-                    id: 1,
-                    name: 'Damascus Pharmaceuticals',
-                    status: 'active',
-                    contact: '+963 11 123 4567',
-                    lat: 33.5138,
-                    lng: 36.2765,
-                    competitorIds: [1],
-                    categories: ['paints', 'cosmetics'],
-                    remarks: 'Interested in our new product line',
-                    lastVisit: '2023-05-10',
-                    nextVisit: '2023-06-15',
-                    addedBy: 1,
-                    addedOn: '2023-05-10T10:30:00'
-                },
-                {
-                    id: 2,
-                    name: 'Aleppo Medical Supplies',
-                    status: 'hard',
-                    contact: '+963 21 987 6543',
-                    lat: 36.2021,
-                    lng: 37.1343,
-                    competitorIds: [2],
-                    categories: ['alkyde'],
-                    remarks: 'Need to discuss pricing',
-                    lastVisit: '2023-05-05',
-                    nextVisit: '2023-06-20',
-                    addedBy: 1,
-                    addedOn: '2023-05-05T14:15:00'
-                },
-                {
-                    id: 3,
-                    name: 'Homs Chemical Industries',
-                    status: 'stopped',
-                    contact: '+963 31 456 7890',
-                    lat: 34.7324,
-                    lng: 36.7137,
-                    competitorIds: [],
-                    categories: ['paints', 'alkyde'],
-                    remarks: 'Stopped working with us due to pricing issues',
-                    lastVisit: '2023-01-15',
-                    nextVisit: null,
-                    addedBy: 2,
-                    addedOn: '2023-01-10T09:45:00'
-                }
-            ],
-            competitors: [
-                { 
-                    id: 1, 
-                    name: 'SyriaChem', 
-                    location: 'Damascus Industrial Zone',
-                    products: 'Industrial chemicals, Solvents',
-                    color: '#FF5733'
-                },
-                { 
-                    id: 2, 
-                    name: 'MedEast Chemicals', 
-                    location: 'Latakia Port Area',
-                    products: 'Pharmaceutical chemicals, Reagents',
-                    color: '#33FF57'
-                }
-            ],
-            users: [
-                {
-                    id: 1,
-                    username: 'Hazem Abdeen',
-                    password: 'acrylique',
-                    fullName: 'Hazem Abdeen',
-                    role: 'admin'
-                },
-                {
-                    id: 2,
-                    username: 'sales1',
-                    password: 'sales123',
-                    fullName: 'Ahmad Khalid',
-                    role: 'salesperson',
-                    tracking: [
-                        {
-                            timestamp: new Date().toISOString(),
-                            lat: 33.5102,
-                            lng: 36.2913,
-                            status: 'active'
-                        }
-                    ]
-                },
-                {
-                    id: 3,
-                    username: 'sales2',
-                    password: 'sales456',
-                    fullName: 'Layla Omar',
-                    role: 'salesperson',
-                    tracking: [
-                        {
-                            timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-                            lat: 36.1921,
-                            lng: 37.1637,
-                            status: 'inactive'
-                        }
-                    ]
-                }
-            ]
-        };
+  <script>
+    // Global variables
+    let map;
+    let markers = [];
+    let competitorMarkers = [];
+    let salespersonMarkers = [];
+    let isAuthenticated = false;
+    let currentUser = null;
+    let trackingInterval = null;
+    
+    // Global data object
+    const data = {
+      customers: [],
+      competitors: [],
+      users: []
+    };
 
-        // Global variables
-        let isAuthenticated = false;
-        let currentUser = null;
-        let map;
-        let customerMarkers = [];
-        let salespersonMarkers = [];
-        let currentCompetitorFilter = 'all';
-        let currentStatusFilter = 'all';
-        let currentCategoryFilter = 'all';
-        let userLocationMarker = null;
-        let trackingInterval = null;
+    // Load data from Firebase
+    async function loadFromFirebase() {
+      try {
+        // Check if users collection exists, if not create sample data
+        const usersSnapshot = await db.collection('users').get();
         
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            setupLoginListeners();
-            
-            // Check if already logged in (for demo purposes)
-            const savedAuth = localStorage.getItem('isAuthenticated');
-            const savedUser = localStorage.getItem('currentUser');
-            if (savedAuth === 'true' && savedUser) {
-                try {
-                    currentUser = JSON.parse(savedUser);
-                    loginSuccess();
-                } catch (e) {
-                    console.error("Error parsing saved user:", e);
-                    logout();
-                }
-            }
+        if (usersSnapshot.empty) {
+          // Create sample data
+          console.log("Creating sample data...");
+          
+          // Add admin user
+          await db.collection('users').add({
+            username: 'Hazem Abdeen',
+            password: 'acrylique',
+            fullName: 'Hazem Abdeen',
+            role: 'admin'
+          });
+          
+          // Add salesperson
+          await db.collection('users').add({
+            username: 'sales1',
+            password: 'sales123',
+            fullName: 'Ahmad Khalid',
+            role: 'salesperson'
+          });
+          
+          // Add competitors
+          const comp1 = await db.collection('competitors').add({
+            name: 'SyriaChem',
+            location: 'Damascus Industrial Zone',
+            products: 'Industrial chemicals, Solvents',
+            color: '#FF5733'
+          });
+          
+          const comp2 = await db.collection('competitors').add({
+            name: 'MedEast Chemicals',
+            location: 'Latakia Port Area',
+            products: 'Pharmaceutical chemicals, Reagents',
+            color: '#33FF57'
+          });
+          
+          // Add customers
+          await db.collection('customers').add({
+            name: 'Damascus Pharmaceuticals',
+            status: 'active',
+            contact: '+963 11 123 4567',
+            lat: 33.5138,
+            lng: 36.2765,
+            competitorIds: [comp1.id],
+            categories: ['paints', 'cosmetics'],
+            remarks: 'Interested in our new product line',
+            lastVisit: '2023-05-10',
+            nextVisit: '2023-06-15',
+            addedBy: 1,
+            addedOn: '2023-05-10T10:30:00'
+          });
+          
+          await db.collection('customers').add({
+            name: 'Aleppo Medical Supplies',
+            status: 'hard',
+            contact: '+963 21 987 6543',
+            lat: 36.2021,
+            lng: 37.1343,
+            competitorIds: [comp2.id],
+            categories: ['alkyde'],
+            remarks: 'Need to discuss pricing',
+            lastVisit: '2023-05-05',
+            nextVisit: '2023-06-20',
+            addedBy: 1,
+            addedOn: '2023-05-05T14:15:00'
+          });
+        }
+        
+        // Load users
+        const usersData = await db.collection('users').get();
+        data.users = usersData.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        // Load competitors
+        const competitorsData = await db.collection('competitors').get();
+        data.competitors = competitorsData.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        // Load customers
+        const customersData = await db.collection('customers').get();
+        data.customers = customersData.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        console.log("Data loaded from Firebase");
+      } catch (error) {
+        console.error("Error loading data:", error);
+        alert("Error connecting to database. Using local data instead.");
+        
+        // Use sample data as fallback
+        data.users = [
+          {
+            id: "1",
+            username: 'Hazem Abdeen',
+            password: 'acrylique',
+            fullName: 'Hazem Abdeen',
+            role: 'admin'
+          },
+          {
+            id: "2",
+            username: 'sales1',
+            password: 'sales123',
+            fullName: 'Ahmad Khalid',
+            role: 'salesperson'
+          }
+        ];
+        
+        data.competitors = [
+          { 
+            id: "1", 
+            name: 'SyriaChem', 
+            location: 'Damascus Industrial Zone',
+            products: 'Industrial chemicals, Solvents',
+            color: '#FF5733'
+          },
+          { 
+            id: "2", 
+            name: 'MedEast Chemicals', 
+            location: 'Latakia Port Area',
+            products: 'Pharmaceutical chemicals, Reagents',
+            color: '#33FF57'
+          }
+        ];
+        
+        data.customers = [
+          {
+            id: "1",
+            name: 'Damascus Pharmaceuticals',
+            status: 'active',
+            contact: '+963 11 123 4567',
+            lat: 33.5138,
+            lng: 36.2765,
+            competitorIds: ["1"],
+            categories: ['paints', 'cosmetics'],
+            remarks: 'Interested in our new product line',
+            lastVisit: '2023-05-10',
+            nextVisit: '2023-06-15',
+            addedBy: "1",
+            addedOn: '2023-05-10T10:30:00'
+          },
+          {
+            id: "2",
+            name: 'Aleppo Medical Supplies',
+            status: 'hard',
+            contact: '+963 21 987 6543',
+            lat: 36.2021,
+            lng: 37.1343,
+            competitorIds: ["2"],
+            categories: ['alkyde'],
+            remarks: 'Need to discuss pricing',
+            lastVisit: '2023-05-05',
+            nextVisit: '2023-06-20',
+            addedBy: "1",
+            addedOn: '2023-05-05T14:15:00'
+          }
+        ];
+      }
+    }
+    
+    // Initialize map
+    function initMap() {
+      // Create map centered on Syria
+      map = L.map('map').setView([35.0, 38.0], 7);
+      
+      // Add tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+      
+      // Add click event to map for adding customers
+      map.on('click', function(e) {
+        if (document.getElementById('customerForm').classList.contains('hidden')) {
+          return;
+        }
+        
+        document.getElementById('customerLat').value = e.latlng.lat.toFixed(6);
+        document.getElementById('customerLng').value = e.latlng.lng.toFixed(6);
+      });
+    }
+    
+    // Refresh map markers
+    function refreshMarkers() {
+      // Clear existing markers
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+      
+      // Get filter values
+      const statusFilter = document.getElementById('mapStatusFilter').value;
+      const categoryFilter = document.getElementById('mapCategoryFilter').value;
+      const competitorFilter = document.getElementById('mapCompetitorFilter').value;
+      
+      // Add customer markers
+      data.customers.forEach(customer => {
+        // Apply filters
+        if (statusFilter !== 'all' && customer.status !== statusFilter) return;
+        if (categoryFilter !== 'all' && !customer.categories.includes(categoryFilter)) return;
+        if (competitorFilter !== 'all' && !customer.competitorIds.includes(competitorFilter)) return;
+        
+        // Create marker
+        const markerHtml = `<div class="custom-marker status-${customer.status}">${customer.name.charAt(0)}</div>`;
+        const icon = L.divIcon({
+          html: markerHtml,
+          className: '',
+          iconSize: [30, 30]
         });
         
-        // Setup login listeners
-        function setupLoginListeners() {
-            document.getElementById('loginButton').addEventListener('click', attemptLogin);
-            document.getElementById('loginUsername').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    attemptLogin();
-                }
-            });
-            document.getElementById('loginPassword').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    attemptLogin();
-                }
-            });
+        const marker = L.marker([customer.lat, customer.lng], { icon: icon });
+        
+        // Create popup content
+        let popupContent = `
+          <div class="p-2">
+            <h3 class="font-bold">${customer.name}</h3>
+            <p class="text-sm mb-1">Status: <span class="font-medium">${customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}</span></p>
+            <p class="text-sm mb-1">Contact: <span class="font-medium">${customer.contact || 'N/A'}</span></p>
+            <p class="text-sm mb-1">Categories: <span class="font-medium">${customer.categories.join(', ') || 'N/A'}</span></p>
+            <p class="text-sm mb-2">Competitors: <span class="font-medium">${getCompetitorNames(customer.competitorIds).join(', ') || 'None'}</span></p>
+            <div class="flex space-x-2 mt-2">
+              <button class="edit-customer-btn bg-blue-600 text-white py-1 px-2 rounded text-xs" data-id="${customer.id}">Edit</button>
+        `;
+        
+        // Only show delete button for admins
+        if (currentUser && currentUser.role === 'admin') {
+          popupContent += `<button class="delete-customer-btn bg-red-600 text-white py-1 px-2 rounded text-xs" data-id="${customer.id}">Delete</button>`;
         }
         
-        // Attempt login
-        function attemptLogin() {
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            const user = data.users.find(u => u.username === username && u.password === password);
-            
-            if (user) {
-                currentUser = {
-                    id: user.id,
-                    username: user.username,
-                    fullName: user.fullName,
-                    role: user.role
-                };
-                loginSuccess();
-            } else {
-                document.getElementById('loginError').classList.remove('hidden');
+        popupContent += `
+            </div>
+          </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        
+        // Add event listeners to popup buttons
+        marker.on('popupopen', function() {
+          document.querySelector('.edit-customer-btn').addEventListener('click', function(e) {
+            const customerId = e.target.getAttribute('data-id');
+            editCustomer(customerId);
+            map.closePopup();
+          });
+          
+          const deleteBtn = document.querySelector('.delete-customer-btn');
+          if (deleteBtn) {
+            deleteBtn.addEventListener('click', function(e) {
+              const customerId = e.target.getAttribute('data-id');
+              deleteCustomer(customerId);
+              map.closePopup();
+            });
+          }
+        });
+        
+        marker.addTo(map);
+        markers.push(marker);
+      });
+      
+      // Refresh competitor markers
+      refreshCompetitorMarkers();
+      
+      // Refresh salesperson markers
+      refreshSalespersonMarkers();
+    }
+    
+    // Refresh competitor markers
+    function refreshCompetitorMarkers() {
+      // Clear existing competitor markers
+      competitorMarkers.forEach(marker => map.removeLayer(marker));
+      competitorMarkers = [];
+      
+      // Check if competitors should be shown
+      if (!document.getElementById('showCompetitors').checked) {
+        return;
+      }
+      
+      // Add competitor markers
+      data.competitors.forEach(competitor => {
+        // Find customers associated with this competitor
+        const associatedCustomers = data.customers.filter(customer => 
+          customer.competitorIds && customer.competitorIds.includes(competitor.id)
+        );
+        
+        // Skip if no associated customers
+        if (associatedCustomers.length === 0) {
+          return;
+        }
+        
+        // Calculate average position
+        let avgLat = 0;
+        let avgLng = 0;
+        
+        associatedCustomers.forEach(customer => {
+          avgLat += customer.lat;
+          avgLng += customer.lng;
+        });
+        
+        avgLat /= associatedCustomers.length;
+        avgLng /= associatedCustomers.length;
+        
+        // Create marker
+        const markerHtml = `<div class="competitor-marker" style="background-color: ${competitor.color};"></div>`;
+        const icon = L.divIcon({
+          html: markerHtml,
+          className: '',
+          iconSize: [20, 20]
+        });
+        
+        const marker = L.marker([avgLat, avgLng], { icon: icon });
+        
+        // Create popup content
+        const popupContent = `
+          <div class="p-2">
+            <h3 class="font-bold">${competitor.name}</h3>
+            <p class="text-sm mb-1">Location: <span class="font-medium">${competitor.location || 'N/A'}</span></p>
+            <p class="text-sm mb-1">Products: <span class="font-medium">${competitor.products || 'N/A'}</span></p>
+            <p class="text-sm mb-2">Customers: <span class="font-medium">${associatedCustomers.length}</span></p>
+          </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        marker.addTo(map);
+        competitorMarkers.push(marker);
+      });
+    }
+    
+    // Refresh salesperson markers
+    function refreshSalespersonMarkers() {
+      // Clear existing salesperson markers
+      salespersonMarkers.forEach(marker => map.removeLayer(marker));
+      salespersonMarkers = [];
+      
+      // Check if salespersons should be shown
+      if (!document.getElementById('showSalespersons').checked) {
+        return;
+      }
+      
+      // Add salesperson markers
+      data.users.forEach(user => {
+        if (user.role !== 'salesperson' || !user.tracking || user.tracking.length === 0) {
+          return;
+        }
+        
+        // Get latest tracking data
+        const latestTracking = user.tracking[user.tracking.length - 1];
+        
+        // Create marker
+        const markerHtml = `<div class="salesperson-marker">${user.fullName.charAt(0)}</div>`;
+        const icon = L.divIcon({
+          html: markerHtml,
+          className: '',
+          iconSize: [25, 25]
+        });
+        
+        const marker = L.marker([latestTracking.lat, latestTracking.lng], { icon: icon });
+        
+        // Create popup content
+        const popupContent = `
+          <div class="p-2">
+            <h3 class="font-bold">${user.fullName}</h3>
+            <p class="text-sm mb-1">Status: <span class="font-medium">${latestTracking.status || 'Active'}</span></p>
+            <p class="text-sm mb-1">Last Update: <span class="font-medium">${formatDateTime(latestTracking.timestamp)}</span></p>
+          </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        marker.addTo(map);
+        salespersonMarkers.push(marker);
+      });
+    }
+    
+    // Get competitor names from IDs
+    function getCompetitorNames(competitorIds) {
+      if (!competitorIds || competitorIds.length === 0) {
+        return [];
+      }
+      
+      return competitorIds.map(id => {
+        const competitor = data.competitors.find(c => c.id === id);
+        return competitor ? competitor.name : 'Unknown';
+      });
+    }
+    
+    // Format date and time
+    function formatDateTime(dateTimeString) {
+      if (!dateTimeString) return 'N/A';
+      
+      const date = new Date(dateTimeString);
+      return date.toLocaleString();
+    }
+    
+    // Format date only
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    }
+    
+    // Render customers table
+    function renderCustomers() {
+      const tableBody = document.getElementById('customerTableBody');
+      tableBody.innerHTML = '';
+      
+      // Get filter values
+      const statusFilter = document.getElementById('customerStatusFilter').value;
+      const categoryFilter = document.getElementById('customerCategoryFilter').value;
+      const competitorFilter = document.getElementById('customerCompetitorFilter').value;
+      
+      // Filter customers
+      const filteredCustomers = data.customers.filter(customer => {
+        if (statusFilter !== 'all' && customer.status !== statusFilter) return false;
+        if (categoryFilter !== 'all' && !customer.categories.includes(categoryFilter)) return false;
+        if (competitorFilter !== 'all' && !customer.competitorIds.includes(competitorFilter)) return false;
+        return true;
+      });
+      
+      // Add rows
+      filteredCustomers.forEach(customer => {
+        const row = document.createElement('tr');
+        
+        // Create status badge
+        let statusClass = '';
+        switch (customer.status) {
+          case 'active':
+            statusClass = 'bg-green-100 text-green-800';
+            break;
+          case 'inactive':
+            statusClass = 'bg-gray-100 text-gray-800';
+            break;
+          case 'hard':
+            statusClass = 'bg-red-100 text-red-800';
+            break;
+          case 'potential':
+            statusClass = 'bg-yellow-100 text-yellow-800';
+            break;
+        }
+        
+        const statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}</span>`;
+        
+        // Create categories list
+        const categoriesList = customer.categories.map(category => 
+          `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-1">${category}</span>`
+        ).join('');
+        
+        // Create competitors list
+        const competitorsList = getCompetitorNames(customer.competitorIds).map(name => 
+          `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1">${name}</span>`
+        ).join('');
+        
+        // Create action buttons
+        let actionButtons = `
+          <button class="edit-customer-btn bg-blue-600 text-white py-1 px-2 rounded text-xs mr-2" data-id="${customer.id}">Edit</button>
+        `;
+        
+        // Only show delete button for admins
+        if (currentUser && currentUser.role === 'admin') {
+          actionButtons += `<button class="delete-customer-btn bg-red-600 text-white py-1 px-2 rounded text-xs" data-id="${customer.id}">Delete</button>`;
+        }
+        
+        row.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">${customer.name}</div>
+            <div class="text-sm text-gray-500">${customer.contact || ''}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            ${statusBadge}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="flex flex-wrap gap-1">${categoriesList || 'None'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="flex flex-wrap gap-1">${competitorsList || 'None'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            ${formatDate(customer.lastVisit)}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            ${formatDate(customer.nextVisit)}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right">
+            <div class="flex justify-end">
+              ${actionButtons}
+            </div>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+      
+      // Add event listeners to buttons
+      document.querySelectorAll('.edit-customer-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const customerId = this.getAttribute('data-id');
+          editCustomer(customerId);
+        });
+      });
+      
+      document.querySelectorAll('.delete-customer-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const customerId = this.getAttribute('data-id');
+          deleteCustomer(customerId);
+        });
+      });
+    }
+    
+    // Render competitors table
+    function renderCompetitors() {
+      const tableBody = document.getElementById('competitorTableBody');
+      tableBody.innerHTML = '';
+      
+      data.competitors.forEach(competitor => {
+        const row = document.createElement('tr');
+        
+        // Create color swatch
+        const colorSwatch = `<div class="w-6 h-6 rounded-full" style="background-color: ${competitor.color};"></div>`;
+        
+        row.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">${competitor.name}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-500">${competitor.location || 'N/A'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-500">${competitor.products || 'N/A'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            ${colorSwatch}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right">
+            <button class="edit-competitor-btn bg-blue-600 text-white py-1 px-2 rounded text-xs mr-2" data-id="${competitor.id}">Edit</button>
+            <button class="delete-competitor-btn bg-red-600 text-white py-1 px-2 rounded text-xs" data-id="${competitor.id}">Delete</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+      
+      // Add event listeners to buttons
+      document.querySelectorAll('.edit-competitor-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const competitorId = this.getAttribute('data-id');
+          editCompetitor(competitorId);
+        });
+      });
+      
+      document.querySelectorAll('.delete-competitor-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const competitorId = this.getAttribute('data-id');
+          deleteCompetitor(competitorId);
+        });
+      });
+    }
+    
+    // Render users table
+    function renderUsers() {
+      const tableBody = document.getElementById('userTableBody');
+      tableBody.innerHTML = '';
+      
+      data.users.forEach(user => {
+        const row = document.createElement('tr');
+        
+        // Create role badge
+        let roleClass = user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
+        const roleBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${roleClass}">${user.role === 'admin' ? 'Administrator' : 'Salesperson'}</span>`;
+        
+        row.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">${user.fullName}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-500">${user.username}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            ${roleBadge}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right">
+            <button class="edit-user-btn bg-blue-600 text-white py-1 px-2 rounded text-xs mr-2" data-id="${user.id}">Edit</button>
+            <button class="delete-user-btn bg-red-600 text-white py-1 px-2 rounded text-xs" data-id="${user.id}">Delete</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+      
+      // Add event listeners to buttons
+      document.querySelectorAll('.edit-user-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const userId = this.getAttribute('data-id');
+          editUser(userId);
+        });
+      });
+      
+      document.querySelectorAll('.delete-user-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const userId = this.getAttribute('data-id');
+          deleteUser(userId);
+        });
+      });
+    }
+    
+    // Render salespersons table
+    function renderSalespersons() {
+      const tableBody = document.getElementById('salespersonTableBody');
+      tableBody.innerHTML = '';
+      
+      const salespersons = data.users.filter(user => user.role === 'salesperson');
+      
+      salespersons.forEach(user => {
+        const row = document.createElement('tr');
+        
+        // Get latest tracking data
+        let lastActive = 'Never';
+        let status = 'Inactive';
+        
+        if (user.tracking && user.tracking.length > 0) {
+          const latestTracking = user.tracking[user.tracking.length - 1];
+          lastActive = formatDateTime(latestTracking.timestamp);
+          status = latestTracking.status || 'Active';
+        }
+        
+        // Count customers added by this salesperson
+        const customerCount = data.customers.filter(customer => customer.addedBy === user.id).length;
+        
+        // Create status badge
+        let statusClass = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+        const statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${status}</span>`;
+        
+        row.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">${user.fullName}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-500">${lastActive}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            ${statusBadge}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">${customerCount}</div>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+    
+    // Update competitor checkboxes
+    function updateCompetitorCheckboxes() {
+      const container = document.getElementById('competitorCheckboxes');
+      container.innerHTML = '';
+      
+      data.competitors.forEach(competitor => {
+        const label = document.createElement('label');
+        label.className = 'inline-flex items-center';
+        
+        label.innerHTML = `
+          <input type="checkbox" value="${competitor.id}" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+          <span class="ml-2 text-sm text-gray-700">${competitor.name}</span>
+        `;
+        
+        container.appendChild(label);
+      });
+    }
+    
+    // Update filter dropdowns
+    function updateFilterDropdowns() {
+      const mapCompetitorFilter = document.getElementById('mapCompetitorFilter');
+      const customerCompetitorFilter = document.getElementById('customerCompetitorFilter');
+      
+      // Clear existing options except the first one
+      while (mapCompetitorFilter.options.length > 1) {
+        mapCompetitorFilter.remove(1);
+      }
+      
+      while (customerCompetitorFilter.options.length > 1) {
+        customerCompetitorFilter.remove(1);
+      }
+      
+      // Add competitor options
+      data.competitors.forEach(competitor => {
+        const option1 = document.createElement('option');
+        option1.value = competitor.id;
+        option1.textContent = competitor.name;
+        mapCompetitorFilter.appendChild(option1);
+        
+        const option2 = document.createElement('option');
+        option2.value = competitor.id;
+        option2.textContent = competitor.name;
+        customerCompetitorFilter.appendChild(option2);
+      });
+    }
+    
+    // Edit customer
+    function editCustomer(customerId) {
+      const customer = data.customers.find(c => c.id === customerId);
+      if (!customer) return;
+      
+      // Set form title
+      document.getElementById('customerFormTitle').textContent = 'Edit Customer';
+      
+      // Fill form fields
+      document.getElementById('customerId').value = customer.id;
+      document.getElementById('customerName').value = customer.name;
+      document.getElementById('customerStatus').value = customer.status;
+      document.getElementById('customerContact').value = customer.contact || '';
+      document.getElementById('customerLat').value = customer.lat;
+      document.getElementById('customerLng').value = customer.lng;
+      document.getElementById('customerRemarks').value = customer.remarks || '';
+      document.getElementById('lastVisitDate').value = customer.lastVisit || '';
+      document.getElementById('nextVisitDate').value = customer.nextVisit || '';
+      
+      // Check category checkboxes
+      document.querySelectorAll('input[name="customerCategory"]').forEach(checkbox => {
+        checkbox.checked = customer.categories.includes(checkbox.value);
+      });
+      
+      // Check competitor checkboxes
+      document.querySelectorAll('#competitorCheckboxes input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = customer.competitorIds.includes(checkbox.value);
+      });
+      
+      // Show form
+      document.getElementById('customerForm').classList.remove('hidden');
+      
+      // Switch to customers tab
+      switchTab('customers-tab');
+    }
+    
+    // Delete customer
+    async function deleteCustomer(id) {
+      if (confirm('Are you sure you want to delete this customer?')) {
+        try {
+          // Delete from Firebase
+          await db.collection('customers').doc(id).delete();
+          
+          // Remove from local data
+          const index = data.customers.findIndex(c => c.id === id);
+          if (index !== -1) {
+            data.customers.splice(index, 1);
+          }
+          
+          // If we're currently editing this customer, reset the form
+          if (document.getElementById('customerId').value === id) {
+            cancelEdit();
+          }
+          
+          // Update the display
+          refreshMarkers();
+          renderCustomers();
+          
+          // Show confirmation
+          alert('Customer deleted successfully');
+        } catch (error) {
+          console.error("Error deleting customer:", error);
+          alert('Error deleting customer. Please try again.');
+        }
+      }
+    }
+    
+    // Edit competitor
+    function editCompetitor(competitorId) {
+      const competitor = data.competitors.find(c => c.id === competitorId);
+      if (!competitor) return;
+      
+      // Set form title
+      document.getElementById('competitorFormTitle').textContent = 'Edit Competitor';
+      
+      // Fill form fields
+      document.getElementById('competitorId').value = competitor.id;
+      document.getElementById('competitorName').value = competitor.name;
+      document.getElementById('competitorLocation').value = competitor.location || '';
+      document.getElementById('competitorProducts').value = competitor.products || '';
+      document.getElementById('competitorColor').value = competitor.color;
+      
+      // Show form
+      document.getElementById('competitorForm').classList.remove('hidden');
+      
+      // Switch to competitors tab
+      switchTab('competitors-tab');
+    }
+    
+    // Delete competitor
+    async function deleteCompetitor(id) {
+      // Check if competitor is used by any customers
+      const usedByCustomers = data.customers.some(customer => 
+        customer.competitorIds && customer.competitorIds.includes(id)
+      );
+      
+      if (usedByCustomers) {
+        alert('This competitor cannot be deleted because it is used by one or more customers.');
+        return;
+      }
+      
+      if (confirm('Are you sure you want to delete this competitor?')) {
+        try {
+          // Delete from Firebase
+          await db.collection('competitors').doc(id).delete();
+          
+          // Remove from local data
+          const index = data.competitors.findIndex(c => c.id === id);
+          if (index !== -1) {
+            data.competitors.splice(index, 1);
+          }
+          
+          // If we're currently editing this competitor, reset the form
+          if (document.getElementById('competitorId').value === id) {
+            cancelCompetitorEdit();
+          }
+          
+          // Update the display
+          renderCompetitors();
+          updateCompetitorCheckboxes();
+          updateFilterDropdowns();
+          refreshMarkers();
+          
+          // Show confirmation
+          alert('Competitor deleted successfully');
+        } catch (error) {
+          console.error("Error deleting competitor:", error);
+          alert('Error deleting competitor. Please try again.');
+        }
+      }
+    }
+    
+    // Edit user
+    function editUser(userId) {
+      const user = data.users.find(u => u.id === userId);
+      if (!user) return;
+      
+      // Set form title
+      document.getElementById('userFormTitle').textContent = 'Edit User';
+      
+      // Fill form fields
+      document.getElementById('userId').value = user.id;
+      document.getElementById('userFullName').value = user.fullName;
+      document.getElementById('userUsername').value = user.username;
+      document.getElementById('userPassword').value = ''; // Don't show password
+      document.getElementById('userRole').value = user.role;
+      
+      // Show form
+      document.getElementById('userForm').classList.remove('hidden');
+      
+      // Switch to users tab
+      switchTab('users-tab');
+    }
+    
+    // Delete user
+    async function deleteUser(id) {
+      // Check if user is the current user
+      if (currentUser && currentUser.id === id) {
+        alert('You cannot delete your own account.');
+        return;
+      }
+      
+      // Check if user is the last admin
+      const admins = data.users.filter(user => user.role === 'admin');
+      if (admins.length === 1 && admins[0].id === id) {
+        alert('Cannot delete the last administrator account.');
+        return;
+      }
+      
+      if (confirm('Are you sure you want to delete this user?')) {
+        try {
+          // Delete from Firebase
+          await db.collection('users').doc(id).delete();
+          
+          // Remove from local data
+          const index = data.users.findIndex(u => u.id === id);
+          if (index !== -1) {
+            data.users.splice(index, 1);
+          }
+          
+          // If we're currently editing this user, reset the form
+          if (document.getElementById('userId').value === id) {
+            cancelUserEdit();
+          }
+          
+          // Update the display
+          renderUsers();
+          renderSalespersons();
+          refreshMarkers();
+          
+          // Show confirmation
+          alert('User deleted successfully');
+        } catch (error) {
+          console.error("Error deleting user:", error);
+          alert('Error deleting user. Please try again.');
+        }
+      }
+    }
+    
+    // Save customer
+    async function saveCustomer() {
+      // Get form values
+      const customerId = document.getElementById('customerId').value;
+      const name = document.getElementById('customerName').value.trim();
+      const status = document.getElementById('customerStatus').value;
+      const contact = document.getElementById('customerContact').value.trim();
+      const lat = parseFloat(document.getElementById('customerLat').value);
+      const lng = parseFloat(document.getElementById('customerLng').value);
+      const remarks = document.getElementById('customerRemarks').value.trim();
+      const lastVisit = document.getElementById('lastVisitDate').value;
+      const nextVisit = document.getElementById('nextVisitDate').value;
+      
+      // Get selected competitors
+      const competitorIds = [];
+      const competitorCheckboxes = document.querySelectorAll('#competitorCheckboxes input[type="checkbox"]:checked');
+      competitorCheckboxes.forEach(checkbox => {
+        competitorIds.push(checkbox.value);
+      });
+      
+      // Get selected categories
+      const categories = [];
+      const categoryCheckboxes = document.querySelectorAll('input[name="customerCategory"]:checked');
+      categoryCheckboxes.forEach(checkbox => {
+        categories.push(checkbox.value);
+      });
+      
+      // Basic validation
+      if (!name) {
+        alert('Please enter a customer name');
+        return;
+      }
+      
+      if (isNaN(lat) || isNaN(lng)) {
+        alert('Please enter valid coordinates');
+        return;
+      }
+      
+      // Create customer data
+      const customerData = {
+        name: name,
+        status: status,
+        contact: contact,
+        lat: lat,
+        lng: lng,
+        competitorIds: competitorIds,
+        categories: categories,
+        remarks: remarks,
+        lastVisit: lastVisit || null,
+        nextVisit: nextVisit || null,
+        addedBy: currentUser.id,
+        addedOn: new Date().toISOString()
+      };
+      
+      try {
+        // Check if editing or creating new
+        if (customerId) {
+          // Update existing customer
+          await db.collection('customers').doc(customerId).update(customerData);
+          
+          // Update local data
+          const index = data.customers.findIndex(c => c.id === customerId);
+          if (index !== -1) {
+            data.customers[index] = {
+              id: customerId,
+              ...customerData
+            };
+          }
+          
+          // Reset form
+          cancelEdit();
+        } else {
+          // Create new customer
+          const docRef = await db.collection('customers').add(customerData);
+          
+          // Add to local data
+          data.customers.push({
+            id: docRef.id,
+            ...customerData
+          });
+          
+          // Reset form
+          document.getElementById('customerName').value = '';
+          document.getElementById('customerContact').value = '';
+          document.getElementById('customerRemarks').value = '';
+          document.getElementById('lastVisitDate').value = '';
+          document.getElementById('nextVisitDate').value = '';
+          
+          // Uncheck all checkboxes
+          document.querySelectorAll('#competitorCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+          document.querySelectorAll('input[name="customerCategory"]').forEach(cb => cb.checked = false);
+        }
+        
+        // Refresh display
+        refreshMarkers();
+        renderCustomers();
+        
+        // Show confirmation
+        alert('Customer saved successfully');
+      } catch (error) {
+        console.error("Error saving customer:", error);
+        alert('Error saving customer. Please try again.');
+      }
+    }
+    
+    // Save competitor
+    async function saveCompetitor() {
+      // Get form values
+      const competitorId = document.getElementById('competitorId').value;
+      const name = document.getElementById('competitorName').value.trim();
+      const location = document.getElementById('competitorLocation').value.trim();
+      const products = document.getElementById('competitorProducts').value.trim();
+      const color = document.getElementById('competitorColor').value;
+      
+      // Basic validation
+      if (!name) {
+        alert('Please enter a competitor name');
+        return;
+      }
+      
+      // Create competitor data
+      const competitorData = {
+        name: name,
+        location: location,
+        products: products,
+        color: color
+      };
+      
+      try {
+        // Check if editing or creating new
+        if (competitorId) {
+          // Update existing competitor
+          await db.collection('competitors').doc(competitorId).update(competitorData);
+          
+          // Update local data
+          const index = data.competitors.findIndex(c => c.id === competitorId);
+          if (index !== -1) {
+            data.competitors[index] = {
+              id: competitorId,
+              ...competitorData
+            };
+          }
+        } else {
+          // Create new competitor
+          const docRef = await db.collection('competitors').add(competitorData);
+          
+          // Add to local data
+          data.competitors.push({
+            id: docRef.id,
+            ...competitorData
+          });
+        }
+        
+        // Reset form
+        cancelCompetitorEdit();
+        
+        // Update the display
+        renderCompetitors();
+        updateCompetitorCheckboxes();
+        updateFilterDropdowns();
+        refreshMarkers();
+        
+        // Show confirmation
+        alert('Competitor saved successfully');
+      } catch (error) {
+        console.error("Error saving competitor:", error);
+        alert('Error saving competitor. Please try again.');
+      }
+    }
+    
+    // Save user
+    async function saveUser() {
+      // Get form values
+      const userId = document.getElementById('userId').value;
+      const fullName = document.getElementById('userFullName').value.trim();
+      const username = document.getElementById('userUsername').value.trim();
+      const password = document.getElementById('userPassword').value;
+      const role = document.getElementById('userRole').value;
+      
+      // Basic validation
+      if (!fullName || !username) {
+        alert('Please enter full name and username');
+        return;
+      }
+      
+      // Create user data
+      const userData = {
+        fullName: fullName,
+        username: username,
+        role: role
+      };
+      
+      // Add password if provided
+      if (password) {
+        userData.password = password;
+      }
+      
+      try {
+        // Check if editing or creating new
+        if (userId) {
+          // Update existing user
+          await db.collection('users').doc(userId).update(userData);
+          
+          // Update local data
+          const index = data.users.findIndex(u => u.id === userId);
+          if (index !== -1) {
+            // Preserve tracking data if it exists
+            if (data.users[index].tracking) {
+              userData.tracking = data.users[index].tracking;
             }
-        }
-        
-        // Login success
-        function loginSuccess() {
-            isAuthenticated = true;
-            localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
             
-            document.getElementById('loginOverlay').classList.add('hidden');
-            document.getElementById('mainContent').classList.remove('hidden');
+            // Preserve password if not changed
+            if (!password) {
+              userData.password = data.users[index].password;
+            }
             
-            // Set user display
-            document.getElementById('currentUserDisplay').textContent = currentUser.fullName;
+            data.users[index] = {
+              id: userId,
+              ...userData
+            };
             
-            // Set role badge
-            const roleBadge = document.getElementById('userRoleBadge');
-            if (currentUser.role === 'admin') {
-                roleBadge.textContent = 'Administrator';
+            // Update current user if editing self
+            if (currentUser && currentUser.id === userId) {
+              currentUser = data.users[index];
+              localStorage.setItem('currentUser', JSON.stringify(currentUser));
+              
+              // Update display
+              document.getElementById('currentUserDisplay').textContent = currentUser.fullName;
+              
+              const roleBadge = document.getElementById('userRoleBadge');
+              roleBadge.textContent = currentUser.role === 'admin' ? 'Administrator' : 'Salesperson';
+              roleBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium';
+              
+              if (currentUser.role === 'admin') {
                 roleBadge.classList.add('bg-purple-100', 'text-purple-800');
                 document.getElementById('adminOnlySection').classList.remove('hidden');
                 document.getElementById('exportDiv').classList.remove('hidden');
-            } else {
-                roleBadge.textContent = 'Salesperson';
+              } else {
                 roleBadge.classList.add('bg-blue-100', 'text-blue-800');
                 document.getElementById('adminOnlySection').classList.add('hidden');
                 document.getElementById('exportDiv').classList.add('hidden');
+              }
             }
-            
-            // Initialize the app
-            initMap();
-            setupListeners();
-            updateCompetitorCheckboxes();
-            updateFilterDropdowns();
-            renderCustomers();
-            
-            if (currentUser.role === 'admin') {
-                renderCompetitors();
-                renderUsers();
-                renderSalespersons();
-            }
-            
-            // Start tracking for salespersons
-            if (currentUser.role === 'salesperson') {
-                startTracking();
-            }
+          }
+        } else {
+          // Create new user
+          const docRef = await db.collection('users').add(userData);
+          
+          // Add to local data
+          data.users.push({
+            id: docRef.id,
+            ...userData
+          });
         }
         
-        // Start location tracking
-        function startTracking() {
-            // Update location immediately
-            updateSalespersonLocation();
-            
-            // Then update every 5 minutes
-            trackingInterval = setInterval(updateSalespersonLocation, 5 * 60 * 1000);
-        }
+        // Reset form
+        cancelUserEdit();
         
-        // Update salesperson location
-        function updateSalespersonLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        
-                        // Find the current user
-                        const user = data.users.find(u => u.id === currentUser.id);
-                        
-                        if (user) {
-                            // Initialize tracking array if it doesn't exist
-                            if (!user.tracking) {
-                                user.tracking = [];
-                            }
-                            
-                            // Add new tracking point
-                            user.tracking.push({
-                                timestamp: new Date().toISOString(),
-                                lat: lat,
-                                lng: lng,
-                                status: 'active'
-                            });
-                            
-                            // Limit tracking history to last 100 points
-                            if (user.tracking.length > 100) {
-                                user.tracking = user.tracking.slice(-100);
-                            }
-                            
-                            console.log(`Location updated for ${user.fullName}: ${lat}, ${lng}`);
-                        }
-                    },
-                    function(error) {
-                        console.error("Error updating location:", error);
-                    }
-                );
-            }
-        }
+        // Update the display
+        renderUsers();
+        renderSalespersons();
         
-        // Initialize map
-        function initMap() {
-            map = L.map('map').setView([35.0, 38.0], 7);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            }).addTo(map);
-            
-            // Add click event to map
-            map.on('click', function(e) {
-                document.getElementById('customerLat').value = e.latlng.lat.toFixed(6);
-                document.getElementById('customerLng').value = e.latlng.lng.toFixed(6);
-            });
-            
-            // Add existing markers
-            refreshMarkers();
-        }
+        // Show confirmation
+        alert('User saved successfully');
+      } catch (error) {
+        console.error("Error saving user:", error);
+        alert('Error saving user. Please try again.');
+      }
+    }
+    
+    // Cancel customer edit
+    function cancelEdit() {
+      document.getElementById('customerId').value = '';
+      document.getElementById('customerName').value = '';
+      document.getElementById('customerContact').value = '';
+      document.getElementById('customerLat').value = '';
+      document.getElementById('customerLng').value = '';
+      document.getElementById('customerRemarks').value = '';
+      document.getElementById('lastVisitDate').value = '';
+      document.getElementById('nextVisitDate').value = '';
+      
+      // Reset status to active
+      document.getElementById('customerStatus').value = 'active';
+      
+      // Uncheck all checkboxes
+      document.querySelectorAll('#competitorCheckboxes input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+      });
+      
+      document.querySelectorAll('input[name="customerCategory"]').forEach(checkbox => {
+        checkbox.checked = false;
+      });
+      
+      // Reset form title
+      document.getElementById('customerFormTitle').textContent = 'Add New Customer';
+      
+      // Hide form
+      document.getElementById('customerForm').classList.add('hidden');
+    }
+    
+    // Cancel competitor edit
+    function cancelCompetitorEdit() {
+      document.getElementById('competitorId').value = '';
+      document.getElementById('competitorName').value = '';
+      document.getElementById('competitorLocation').value = '';
+      document.getElementById('competitorProducts').value = '';
+      document.getElementById('competitorColor').value = '#FF5733';
+      
+      // Reset form title
+      document.getElementById('competitorFormTitle').textContent = 'Add New Competitor';
+      
+      // Hide form
+      document.getElementById('competitorForm').classList.add('hidden');
+    }
+    
+    // Cancel user edit
+    function cancelUserEdit() {
+      document.getElementById('userId').value = '';
+      document.getElementById('userFullName').value = '';
+      document.getElementById('userUsername').value = '';
+      document.getElementById('userPassword').value = '';
+      document.getElementById('userRole').value = 'admin';
+      
+      // Reset form title
+      document.getElementById('userFormTitle').textContent = 'Add New User';
+      
+      // Hide form
+      document.getElementById('userForm').classList.add('hidden');
+    }
+    
+    // Export customers to CSV
+    function exportCustomersToCSV() {
+      // Get filter values
+      const statusFilter = document.getElementById('customerStatusFilter').value;
+      const categoryFilter = document.getElementById('customerCategoryFilter').value;
+      const competitorFilter = document.getElementById('customerCompetitorFilter').value;
+      
+      // Filter customers
+      const filteredCustomers = data.customers.filter(customer => {
+        if (statusFilter !== 'all' && customer.status !== statusFilter) return false;
+        if (categoryFilter !== 'all' && !customer.categories.includes(categoryFilter)) return false;
+        if (competitorFilter !== 'all' && !customer.competitorIds.includes(competitorFilter)) return false;
+        return true;
+      });
+      
+      // Create CSV content
+      let csvContent = 'Name,Status,Contact,Latitude,Longitude,Categories,Competitors,Remarks,Last Visit,Next Visit\n';
+      
+      filteredCustomers.forEach(customer => {
+        const categories = customer.categories.join('; ');
+        const competitors = getCompetitorNames(customer.competitorIds).join('; ');
         
-        // Setup event listeners
-        function setupListeners() {
-            // Save customer button
-            document.getElementById('saveCustomerBtn').addEventListener('click', saveCustomer);
-            
-            // Cancel edit button
-            document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
-            
-            // Get location button
-            document.getElementById('getLocationBtn').addEventListener('click', getCurrentLocation);
-            
-            // Filter dropdowns
-            document.getElementById('filterCompetitor').addEventListener('change', function() {
-                currentCompetitorFilter = this.value;
-                refreshMarkers();
-                renderCustomers();
-            });
-            
-            document.getElementById('filterStatus').addEventListener('change', function() {
-                currentStatusFilter = this.value;
-                refreshMarkers();
-                renderCustomers();
-            });
-            
-            document.getElementById('filterCategory').addEventListener('change', function() {
-                currentCategoryFilter = this.value;
-                refreshMarkers();
-                renderCustomers();
-            });
-            
-            // Export CSV button
-            if (document.getElementById('exportCsvBtn')) {
-                document.getElementById('exportCsvBtn').addEventListener('click', exportCustomersToCSV);
-            }
-            
-            // Logout button
-            document.getElementById('logoutButton').addEventListener('click', logout);
-            
-            // Admin-only listeners
-            if (currentUser.role === 'admin') {
-                // Save competitor button
-                document.getElementById('saveCompetitorBtn').addEventListener('click', saveCompetitor);
-                
-                // Cancel competitor edit button
-                document.getElementById('cancelCompetitorEditBtn').addEventListener('click', cancelCompetitorEdit);
-                
-                // Save user button
-                document.getElementById('saveUserBtn').addEventListener('click', saveUser);
-                
-                // Cancel user edit button
-                document.getElementById('cancelUserEditBtn').addEventListener('click', cancelUserEdit);
-            }
-        }
+        // Escape fields that might contain commas
+        const escapeCsv = (str) => {
+          if (!str) return '';
+          return `"${str.replace(/"/g, '""')}"`;
+        };
         
-        // Get current location
-        function getCurrentLocation() {
-            if (navigator.geolocation) {
-                // Show loading indicator
-                document.getElementById('getLocationBtn').innerHTML = `
-                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                `;
-                
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        // Get coordinates
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        
-                        // Update form fields
-                        document.getElementById('customerLat').value = lat.toFixed(6);
-                        document.getElementById('customerLng').value = lng.toFixed(6);
-                        
-                        // Update map
-                        map.setView([lat, lng], 15);
-                        
-                        // Add or update marker for user location
-                        if (userLocationMarker) {
-                            map.removeLayer(userLocationMarker);
-                        }
-                        
-                        userLocationMarker = L.marker([lat, lng], {
-                            icon: L.divIcon({
-                                className: 'user-location-marker',
-                                html: `<div style="background-color: #4299e1; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 2px #4299e1;"></div>`,
-                                iconSize: [16, 16],
-                                iconAnchor: [8, 8]
-                            })
-                        }).addTo(map);
-                        
-                        // Reset button
-                        document.getElementById('getLocationBtn').innerHTML = `
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                        `;
-                    },
-                    function(error) {
-                        // Handle errors
-                        let errorMessage;
-                        switch(error.code) {
-                            case error.PERMISSION_DENIED:
-                                errorMessage = "Location access denied. Please enable location services.";
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                errorMessage = "Location information is unavailable.";
-                                break;
-                            case error.TIMEOUT:
-                                errorMessage = "Location request timed out.";
-                                break;
-                            default:
-                                errorMessage = "An unknown error occurred.";
-                        }
-                        
-                        alert(errorMessage);
-                        
-                        // Reset button
-                        document.getElementById('getLocationBtn').innerHTML = `
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                        `;
-                    }
-                );
-            } else {
-                alert("Geolocation is not supported by this browser.");
-            }
-        }
-        
-        // Logout
-        function logout() {
-            isAuthenticated = false;
-            currentUser = null;
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('currentUser');
+        csvContent += [
+          escapeCsv(customer.name),
+          customer.status,
+          escapeCsv(customer.contact),
+          customer.lat,
+          customer.lng,
+          escapeCsv(categories),
+          escapeCsv(competitors),
+          escapeCsv(customer.remarks),
+          customer.lastVisit || '',
+          customer.nextVisit || ''
+        ].join(',') + '\n';
+      });
+      
+      // Create download link
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'customers.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    
+    // Start tracking for salesperson
+    function startTracking() {
+      // Check if geolocation is available
+      if (!navigator.geolocation) {
+        console.log('Geolocation is not supported by your browser');
+        return;
+      }
+      
+      // Start tracking interval
+      trackingInterval = setInterval(() => {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const trackingData = {
+              timestamp: new Date().toISOString(),
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              status: 'Active'
+            };
             
-            // Clear tracking interval if active
-            if (trackingInterval) {
-                clearInterval(trackingInterval);
-                trackingInterval = null;
-            }
-            
-            document.getElementById('loginOverlay').classList.remove('hidden');
-            document.getElementById('mainContent').classList.add('hidden');
-            
-            // Clear login form
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
-            document.getElementById('loginError').classList.add('hidden');
-        }
-        
-        // Save customer
-        function saveCustomer() {
-            // Get form values
-            const customerId = document.getElementById('customerId').value;
-            const name = document.getElementById('customerName').value.trim();
-            const status = document.getElementById('customerStatus').value;
-            const contact = document.getElementById('customerContact').value.trim();
-            const lat = parseFloat(document.getElementById('customerLat').value);
-            const lng = parseFloat(document.getElementById('customerLng').value);
-            const remarks = document.getElementById('customerRemarks').value.trim();
-            const lastVisit = document.getElementById('lastVisitDate').value;
-            const nextVisit = document.getElementById('nextVisitDate').value;
-            
-            // Get selected competitors
-            const competitorIds = [];
-            const competitorCheckboxes = document.querySelectorAll('#competitorCheckboxes input[type="checkbox"]:checked');
-            competitorCheckboxes.forEach(checkbox => {
-                competitorIds.push(parseInt(checkbox.value));
-            });
-            
-            // Get selected categories
-            const categories = [];
-            const categoryCheckboxes = document.querySelectorAll('input[name="customerCategory"]:checked');
-            categoryCheckboxes.forEach(checkbox => {
-                categories.push(checkbox.value);
-            });
-            
-            // Basic validation
-            if (!name) {
-                alert('Please enter a customer name');
-                return;
-            }
-            
-            if (isNaN(lat) || isNaN(lng)) {
-                alert('Please enter valid coordinates');
-                return;
-            }
-            
-            // Check if editing or creating new
-            if (customerId) {
-                // Update existing customer
-                const customer = data.customers.find(c => c.id === parseInt(customerId));
-                if (customer) {
-                    customer.name = name;
-                    customer.status = status;
-                    customer.contact = contact;
-                    customer.lat = lat;
-                    customer.lng = lng;
-                    customer.competitorIds = competitorIds;
-                    customer.categories = categories;
-                    customer.remarks = remarks;
-                    customer.lastVisit = lastVisit || null;
-                    customer.nextVisit = nextVisit || null;
-                    
-                    // Only admin can change these fields
-                    if (currentUser.role === 'admin') {
-                        // No additional admin-only fields to update here
-                    }
-                }
-                
-                // Reset form and editing state
-                cancelEdit();
-            } else {
-                // Generate new ID
-                const newId = Math.max(...data.customers.map(c => c.id), 0) + 1;
-                
-                // Create new customer
-                const newCustomer = {
-                    id: newId,
-                    name: name,
-                    status: status,
-                    contact: contact,
-                    lat: lat,
-                    lng: lng,
-                    competitorIds: competitorIds,
-                    categories: categories,
-                    remarks: remarks,
-                    lastVisit: lastVisit || null,
-                    nextVisit: nextVisit || null,
-                    addedBy: currentUser.id,
-                    addedOn: new Date().toISOString()
-                };
-                
-                // Add to data
-                data.customers.push(newCustomer);
-                
-                // Reset form
-                document.getElementById('customerName').value = '';
-                document.getElementById('customerContact').value = '';
-                document.getElementById('customerRemarks').value = '';
-                document.getElementById('lastVisitDate').value = '';
-                document.getElementById('nextVisitDate').value = '';
-                
-                // Uncheck all competitor checkboxes
-                const allCompetitorCheckboxes = document.querySelectorAll('#competitorCheckboxes input[type="checkbox"]');
-                allCompetitorCheckboxes.forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-                
-                // Uncheck all category checkboxes
-                const allCategoryCheckboxes = document.querySelectorAll('input[name="customerCategory"]');
-                allCategoryCheckboxes.forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-            }
-            
-            // Refresh display
-            refreshMarkers();
-            renderCustomers();
-            
-            // If admin, update salesperson table to show new customer counts
-            if (currentUser.role === 'admin') {
-                renderSalespersons();
-            }
-            
-            // Show confirmation
-            alert('Customer saved successfully');
-        }
-        
-        // Edit customer
-        function editCustomer(id) {
-            const customer = data.customers.find(c => c.id === parseInt(id));
-            if (!customer) return;
-            
-            // Set form values
-            document.getElementById('customerId').value = customer.id;
-            document.getElementById('customerName').value = customer.name;
-            document.getElementById('customerStatus').value = customer.status;
-            document.getElementById('customerContact').value = customer.contact || '';
-            document.getElementById('customerLat').value = customer.lat;
-            document.getElementById('customerLng').value = customer.lng;
-            document.getElementById('customerRemarks').value = customer.remarks || '';
-            document.getElementById('lastVisitDate').value = customer.lastVisit || '';
-            document.getElementById('nextVisitDate').value = customer.nextVisit || '';
-            
-            // Check appropriate competitor checkboxes
-            const competitorCheckboxes = document.querySelectorAll('#competitorCheckboxes input[type="checkbox"]');
-            competitorCheckboxes.forEach(checkbox => {
-                checkbox.checked = customer.competitorIds.includes(parseInt(checkbox.value));
-            });
-            
-            // Check appropriate category checkboxes
-            const categoryCheckboxes = document.querySelectorAll('input[name="customerCategory"]');
-            categoryCheckboxes.forEach(checkbox => {
-                checkbox.checked = customer.categories && customer.categories.includes(checkbox.value);
-            });
-            
-            // Show cancel button
-            document.getElementById('cancelEditBtn').classList.remove('hidden');
-            
-            // Change button text
-            document.getElementById('saveCustomerBtn').textContent = 'Update Customer';
-            
-            // Scroll to form
-            document.querySelector('.bg-white').scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        // Cancel edit
-        function cancelEdit() {
-            // Reset form
-            document.getElementById('customerId').value = '';
-            document.getElementById('customerName').value = '';
-            document.getElementById('customerStatus').value = 'active';
-            document.getElementById('customerContact').value = '';
-            document.getElementById('customerRemarks').value = '';
-            document.getElementById('lastVisitDate').value = '';
-            document.getElementById('nextVisitDate').value = '';
-            
-            // Uncheck all competitor checkboxes
-            const competitorCheckboxes = document.querySelectorAll('#competitorCheckboxes input[type="checkbox"]');
-            competitorCheckboxes.forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            
-            // Uncheck all category checkboxes
-            const categoryCheckboxes = document.querySelectorAll('input[name="customerCategory"]');
-            categoryCheckboxes.forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            
-            // Reset map center coordinates
-            const center = map.getCenter();
-            document.getElementById('customerLat').value = center.lat.toFixed(6);
-            document.getElementById('customerLng').value = center.lng.toFixed(6);
-            
-            // Hide cancel button
-            document.getElementById('cancelEditBtn').classList.add('hidden');
-            
-            // Reset button text
-            document.getElementById('saveCustomerBtn').textContent = 'Save Customer';
-        }
-        
-        // Save competitor (admin only)
-        function saveCompetitor() {
-            // Get form values
-            const competitorId = document.getElementById('competitorId').value;
-            const name = document.getElementById('competitorName').value.trim();
-            const location = document.getElementById('competitorLocation').value.trim();
-            const products = document.getElementById('competitorProducts').value.trim();
-            const color = document.querySelector('input[name="competitorColor"]:checked').value;
-            
-            // Basic validation
-            if (!name) {
-                alert('Please enter a competitor name');
-                return;
-            }
-            
-            // Check if editing or creating new
-            if (competitorId) {
-                // Update existing competitor
-                const competitor = data.competitors.find(c => c.id === parseInt(competitorId));
-                if (competitor) {
-                    competitor.name = name;
-                    competitor.location = location;
-                    competitor.products = products;
-                    competitor.color = color;
-                }
-                
-                // Reset form and editing state
-                cancelCompetitorEdit();
-            } else {
-                // Generate new ID
-                const newId = Math.max(...data.competitors.map(c => c.id), 0) + 1;
-                
-                // Create new competitor
-                const newCompetitor = {
-                    id: newId,
-                    name: name,
-                    location: location,
-                    products: products,
-                    color: color
-                };
-                
-                // Add to data
-                data.competitors.push(newCompetitor);
-                
-                // Reset form
-                document.getElementById('competitorName').value = '';
-                document.getElementById('competitorLocation').value = '';
-                document.getElementById('competitorProducts').value = '';
-            }
-            
-            // Update dropdowns and checkboxes
-            updateCompetitorCheckboxes();
-            updateFilterDropdowns();
-            
-            // Refresh display
-            renderCustomers();
-            renderCompetitors();
-            refreshMarkers();
-            
-            // Show confirmation
-            alert('Competitor saved successfully');
-        }
-        
-        // Edit competitor (admin only)
-        function editCompetitor(id) {
-            const competitor = data.competitors.find(c => c.id === parseInt(id));
-            if (!competitor) return;
-            
-            // Set form values
-            document.getElementById('competitorId').value = competitor.id;
-            document.getElementById('competitorName').value = competitor.name;
-            document.getElementById('competitorLocation').value = competitor.location || '';
-            document.getElementById('competitorProducts').value = competitor.products || '';
-            
-            // Set color radio button
-            const colorRadio = document.querySelector(`input[name="competitorColor"][value="${competitor.color}"]`);
-            if (colorRadio) {
-                colorRadio.checked = true;
-            }
-            
-            // Show cancel button
-            document.getElementById('cancelCompetitorEditBtn').classList.remove('hidden');
-            
-            // Change button text
-            document.getElementById('saveCompetitorBtn').textContent = 'Update Competitor';
-        }
-        
-        // Cancel competitor edit (admin only)
-        function cancelCompetitorEdit() {
-            // Reset form
-            document.getElementById('competitorId').value = '';
-            document.getElementById('competitorName').value = '';
-            document.getElementById('competitorLocation').value = '';
-            document.getElementById('competitorProducts').value = '';
-            
-            // Reset color to default
-            document.getElementById('color1').checked = true;
-            
-            // Hide cancel button
-            document.getElementById('cancelCompetitorEditBtn').classList.add('hidden');
-            
-            // Reset button text
-            document.getElementById('saveCompetitorBtn').textContent = 'Save Competitor';
-        }
-        
-        // Save user (admin only)
-        function saveUser() {
-            // Get form values
-            const userId = document.getElementById('userId').value;
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            const fullName = document.getElementById('fullName').value.trim();
-            const role = document.getElementById('userRole').value;
-            
-            // Basic validation
-            if (!username || !fullName) {
-                alert('Please enter username and full name');
-                return;
-            }
-            
-            // Check if editing or creating new
-            if (userId) {
-                // Update existing user
-                const user = data.users.find(u => u.id === parseInt(userId));
-                if (user) {
-                    user.username = username;
-                    user.fullName = fullName;
-                    user.role = role;
-                    
-                    // Only update password if provided
-                    if (password) {
-                        user.password = password;
-                    }
-                }
-                
-                // Reset form and editing state
-                cancelUserEdit();
-            } else {
-                // Check if password is provided for new user
-                if (!password) {
-                    alert('Please enter a password for the new user');
-                    return;
-                }
-                
-                // Check if username already exists
-                if (data.users.some(u => u.username === username)) {
-                    alert('Username already exists. Please choose a different username.');
-                    return;
-                }
-                
-                // Generate new ID
-                const newId = Math.max(...data.users.map(u => u.id), 0) + 1;
-                
-                // Create new user
-                const newUser = {
-                    id: newId,
-                    username: username,
-                    password: password,
-                    fullName: fullName,
-                    role: role
-                };
-                
-                // Add tracking array for salespersons
-                if (role === 'salesperson') {
-                    newUser.tracking = [];
-                }
-                
-                // Add to data
-                data.users.push(newUser);
-                
-                // Reset form
-                document.getElementById('username').value = '';
-                document.getElementById('password').value = '';
-                document.getElementById('fullName').value = '';
-            }
-            
-            // Refresh display
-            renderUsers();
-            renderSalespersons();
-            
-            // Show confirmation
-            alert('User saved successfully');
-        }
-        
-        // Edit user (admin only)
-        function editUser(id) {
-            const user = data.users.find(u => u.id === parseInt(id));
-            if (!user) return;
-            
-            // Set form values
-            document.getElementById('userId').value = user.id;
-            document.getElementById('username').value = user.username;
-            document.getElementById('password').value = ''; // Don't show password
-            document.getElementById('fullName').value = user.fullName || '';
-            document.getElementById('userRole').value = user.role;
-            
-            // Show cancel button
-            document.getElementById('cancelUserEditBtn').classList.remove('hidden');
-            
-            // Change button text
-            document.getElementById('saveUserBtn').textContent = 'Update User';
-        }
-        
-        // Cancel user edit (admin only)
-        function cancelUserEdit() {
-            // Reset form
-            document.getElementById('userId').value = '';
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-            document.getElementById('fullName').value = '';
-            document.getElementById('userRole').value = 'admin';
-            
-            // Hide cancel button
-            document.getElementById('cancelUserEditBtn').classList.add('hidden');
-            
-            // Reset button text
-            document.getElementById('saveUserBtn').textContent = 'Save User';
-        }
-        
-        // Delete customer
-        function deleteCustomer(id) {
-            // Make sure id is a number
-            id = parseInt(id);
-            
-            if (confirm('Are you sure you want to delete this customer?')) {
-                // Find the index of the customer to delete
-                const index = data.customers.findIndex(c => c.id === id);
-                
-                if (index !== -1) {
-                    // Remove the customer from the data array
-                    data.customers.splice(index, 1);
-                    
-                    // If we're currently editing this customer, reset the form
-                    if (parseInt(document.getElementById('customerId').value) === id) {
-                        cancelEdit();
-                    }
-                    
-                    // Update the display
-                    refreshMarkers();
-                    renderCustomers();
-                    
-                    // If admin, update salesperson table
-                    if (currentUser.role === 'admin') {
-                        renderSalespersons();
-                    }
-                    
-                    // Show confirmation
-                    alert('Customer deleted successfully');
-                }
-            }
-        }
-        
-        // Delete competitor (admin only)
-        function deleteCompetitor(id) {
-            // Make sure id is a number
-            id = parseInt(id);
-            
-            // Check if competitor is used by any customers
-            const usedByCustomers = data.customers.some(c => c.competitorIds.includes(id));
-            
-            if (usedByCustomers) {
-                alert('This competitor cannot be deleted because it is assigned to one or more customers. Please reassign those customers first.');
-                return;
-            }
-            
-            if (confirm('Are you sure you want to delete this competitor?')) {
-                // Find the index of the competitor to delete
-                const index = data.competitors.findIndex(c => c.id === id);
-                
-                if (index !== -1) {
-                    // Remove the competitor from the data array
-                    data.competitors.splice(index, 1);
-                    
-                    // If we're currently editing this competitor, reset the form
-                    if (parseInt(document.getElementById('competitorId').value) === id) {
-                        cancelCompetitorEdit();
-                    }
-                    
-                    // Update dropdowns and checkboxes
-                    updateCompetitorCheckboxes();
-                    updateFilterDropdowns();
-                    
-                    // Refresh display
-                    renderCompetitors();
-                    
-                    // Show confirmation
-                    alert('Competitor deleted successfully');
-                }
-            }
-        }
-        
-        // Delete user (admin only)
-        function deleteUser(id) {
-            // Make sure id is a number
-            id = parseInt(id);
-            
-            // Don't allow deleting yourself
-            if (id === currentUser.id) {
-                alert('You cannot delete your own account.');
-                return;
-            }
-            
-            // Check if user has added customers
-            const hasCustomers = data.customers.some(c => c.addedBy === id);
-            
-            let confirmMessage = 'Are you sure you want to delete this user?';
-            if (hasCustomers) {
-                confirmMessage = 'This user has added customers. If you delete this user, those customers will remain but will no longer be associated with a specific user. Are you sure you want to proceed?';
-            }
-            
-            if (confirm(confirmMessage)) {
-                // Find the index of the user to delete
-                const index = data.users.findIndex(u => u.id === id);
-                
-                if (index !== -1) {
-                    // Remove the user from the data array
-                    data.users.splice(index, 1);
-                    
-                    // If we're currently editing this user, reset the form
-                    if (parseInt(document.getElementById('userId').value) === id) {
-                        cancelUserEdit();
-                    }
-                    
-                    // Refresh display
-                    renderUsers();
-                    renderSalespersons();
-                    
-                    // Show confirmation
-                    alert('User deleted successfully');
-                }
-            }
-        }
-        
-        // Track salesperson on map (admin only)
-        function trackSalesperson(id) {
-            // Make sure id is a number
-            id = parseInt(id);
-            
-            // Find the salesperson
-            const salesperson = data.users.find(u => u.id === id && u.role === 'salesperson');
-            
-            if (!salesperson || !salesperson.tracking || salesperson.tracking.length === 0) {
-                alert('No tracking data available for this salesperson.');
-                return;
-            }
-            
-            // Get the most recent tracking point
-            const lastTrack = salesperson.tracking[salesperson.tracking.length - 1];
-            
-            // Center map on salesperson's location
-            map.setView([lastTrack.lat, lastTrack.lng], 15);
-            
-            // Highlight the salesperson's marker
-            refreshMarkers();
-        }
-        
-        // Update competitor checkboxes
-        function updateCompetitorCheckboxes() {
-            const container = document.getElementById('competitorCheckboxes');
-            container.innerHTML = '';
-            
-            if (data.competitors.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-sm">No competitors available</p>';
-                return;
-            }
-            
-            // Add competitor checkboxes
-            data.competitors.forEach(competitor => {
-                const div = document.createElement('div');
-                div.className = 'competitor-option';
-                div.innerHTML = `
-                    <input type="checkbox" id="comp-${competitor.id}" value="${competitor.id}" class="competitor-checkbox">
-                    <label for="comp-${competitor.id}" class="flex items-center">
-                        <span class="color-circle" style="background-color: ${competitor.color};"></span>
-                        ${competitor.name}
-                    </label>
-                `;
-                container.appendChild(div);
-            });
-        }
-        
-        // Update filter dropdowns
-        function updateFilterDropdowns() {
-            const select = document.getElementById('filterCompetitor');
-            
-            // Clear existing options except the first two
-            while (select.options.length > 2) {
-                select.remove(2);
-            }
-            
-            // Add competitor options
-            data.competitors.forEach(competitor => {
-                const option = document.createElement('option');
-                option.value = competitor.id;
-                option.textContent = competitor.name;
-                select.appendChild(option);
-            });
-        }
-        
-        // Refresh map markers
-        function refreshMarkers() {
-            // Clear existing markers
-            customerMarkers.forEach(marker => map.removeLayer(marker));
-            customerMarkers = [];
-            
-            salespersonMarkers.forEach(marker => map.removeLayer(marker));
-            salespersonMarkers = [];
-            
-            // Filter customers
-            let filteredCustomers = data.customers;
-            
-            // Apply status filter
-            if (currentStatusFilter !== 'all') {
-                filteredCustomers = filteredCustomers.filter(c => c.status === currentStatusFilter);
-            }
-            
-            // Apply competitor filter
-            if (currentCompetitorFilter !== 'all') {
-                if (currentCompetitorFilter === 'none') {
-                    filteredCustomers = filteredCustomers.filter(c => c.competitorIds.length === 0);
-                } else {
-                    filteredCustomers = filteredCustomers.filter(c => 
-                        c.competitorIds.includes(parseInt(currentCompetitorFilter))
-                    );
-                }
-            }
-            
-            // Apply category filter
-            if (currentCategoryFilter !== 'all') {
-                filteredCustomers = filteredCustomers.filter(c => 
-                    c.categories && c.categories.includes(currentCategoryFilter)
-                );
-            }
-            
-            // Add customer markers
-            filteredCustomers.forEach(customer => {
-                // Determine color based on status and competitor
-                let color;
-                
-                // Base color on status
-                switch (customer.status) {
-                    case 'active': color = '#10b981'; break; // green
-                    case 'possible': color = '#f59e0b'; break; // yellow
-                    case 'hard': color = '#dc2626'; break; // red
-                    case 'not_possible': color = '#6b7280'; break; // gray
-                    case 'stopped': color = '#000000'; break; // black
-                    default: color = '#9ca3af'; // gray
-                }
-                
-                // If customer has competitors, use the first competitor's color
-                if (customer.competitorIds.length > 0) {
-                    const competitor = data.competitors.find(c => c.id === customer.competitorIds[0]);
-                    if (competitor) {
-                        color = competitor.color;
-                    }
-                }
-                
-                // Create marker
-                const marker = L.circleMarker([customer.lat, customer.lng], {
-                    radius: 8,
-                    fillColor: color,
-                    color: '#000',
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                }).addTo(map);
-                
-                // Get competitor names
-                let competitorNames = 'None';
-                if (customer.competitorIds.length > 0) {
-                    const competitorsList = customer.competitorIds.map(id => {
-                        const competitor = data.competitors.find(c => c.id === id);
-                        return competitor ? competitor.name : 'Unknown';
-                    });
-                    competitorNames = competitorsList.join(', ');
-                }
-                
-                // Get category names
-                let categoryNames = 'None';
-                if (customer.categories && customer.categories.length > 0) {
-                    categoryNames = customer.categories.map(cat => 
-                        cat.charAt(0).toUpperCase() + cat.slice(1)
-                    ).join(', ');
-                }
-                
-                // Format dates
-                let lastVisitFormatted = customer.lastVisit ? new Date(customer.lastVisit).toLocaleDateString() : 'Never';
-                let nextVisitFormatted = customer.nextVisit ? new Date(customer.nextVisit).toLocaleDateString() : 'Not scheduled';
-                
-                // Get added by info
-                let addedByInfo = '';
-                if (customer.addedBy) {
-                    const addedByUser = data.users.find(u => u.id === customer.addedBy);
-                    if (addedByUser) {
-                        const addedDate = customer.addedOn ? new Date(customer.addedOn).toLocaleDateString() : 'Unknown date';
-                        addedByInfo = `<div style="margin-top: 4px;"><b>Added by:</b> ${addedByUser.fullName} on ${addedDate}</div>`;
-                    }
-                }
-                
-                // Add popup
-                marker.bindPopup(`
-                    <b>${customer.name}</b><br>
-                    Status: ${customer.status.replace('_', ' ')}<br>
-                    Categories: ${categoryNames}<br>
-                    Competitors: ${competitorNames}<br>
-                    Contact: ${customer.contact || 'N/A'}<br>
-                    Location: ${customer.lat.toFixed(4)}, ${customer.lng.toFixed(4)}<br>
-                    Last Visit: ${lastVisitFormatted}<br>
-                    Next Visit: ${nextVisitFormatted}<br>
-                    ${customer.remarks ? `<div style="margin-top: 4px;"><b>Remarks:</b> ${customer.remarks}</div>` : ''}
-                    ${addedByInfo}
-                    <div style="margin-top: 8px;">
-                        <button onclick="editCustomer(${customer.id})" 
-                                style="background-color: #3b82f6; color: white; padding: 2px 6px; border-radius: 4px; margin-right: 4px;">
-                            Edit
-                        </button>
-                        ${currentUser.role === 'admin' ? `
-                        <button onclick="deleteCustomer(${customer.id})" 
-                                style="background-color: #ef4444; color: white; padding: 2px 6px; border-radius: 4px;">
-                            Delete
-                        </button>
-                        ` : ''}
-                    </div>
-                `);
-                
-                customerMarkers.push(marker);
-            });
-            
-            // Add salesperson markers (admin only)
-            if (currentUser.role === 'admin') {
-                const salespersons = data.users.filter(u => u.role === 'salesperson');
-                
-                salespersons.forEach(salesperson => {
-                    if (salesperson.tracking && salesperson.tracking.length > 0) {
-                        // Get the most recent tracking point
-                        const lastTrack = salesperson.tracking[salesperson.tracking.length - 1];
-                        
-                        // Calculate how long ago the tracking point was
-                        const trackTime = new Date(lastTrack.timestamp);
-                        const now = new Date();
-                        const minutesAgo = Math.floor((now - trackTime) / (1000 * 60));
-                        
-                        // Determine if active (within last 15 minutes)
-                        const isActive = minutesAgo < 15;
-                        
-                        // Create marker
-                        const marker = L.marker([lastTrack.lat, lastTrack.lng], {
-                            icon: L.divIcon({
-                                className: 'salesperson-marker',
-                                html: `<div style="background-color: ${isActive ? '#10b981' : '#6b7280'}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 2px ${isActive ? '#10b981' : '#6b7280'}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${salesperson.fullName.charAt(0)}</div>`,
-                                iconSize: [24, 24],
-                                iconAnchor: [12, 12]
-                            })
-                        }).addTo(map);
-                        
-                        // Add popup
-                        marker.bindPopup(`
-                            <b>${salesperson.fullName}</b><br>
-                            Status: ${isActive ? 'Active' : 'Inactive'}<br>
-                            Last update: ${minutesAgo} minutes ago<br>
-                            Location: ${lastTrack.lat.toFixed(4)}, ${lastTrack.lng.toFixed(4)}<br>
-                            <div style="margin-top: 8px;">
-                                <button onclick="trackSalesperson(${salesperson.id})" 
-                                        style="background-color: #3b82f6; color: white; padding: 2px 6px; border-radius: 4px;">
-                                    Center Map
-                                </button>
-                            </div>
-                        `);
-                        
-                        salespersonMarkers.push(marker);
-                    }
-                });
-            }
-        }
-        
-        // Render customer table
-        function renderCustomers() {
-            const tableBody = document.getElementById('customerTableBody');
-            tableBody.innerHTML = '';
-            
-            // Filter customers
-            let filteredCustomers = data.customers;
-            
-            // Apply status filter
-            if (currentStatusFilter !== 'all') {
-                filteredCustomers = filteredCustomers.filter(c => c.status === currentStatusFilter);
-            }
-            
-            // Apply competitor filter
-            if (currentCompetitorFilter !== 'all') {
-                if (currentCompetitorFilter === 'none') {
-                    filteredCustomers = filteredCustomers.filter(c => c.competitorIds.length === 0);
-                } else {
-                    filteredCustomers = filteredCustomers.filter(c => 
-                        c.competitorIds.includes(parseInt(currentCompetitorFilter))
-                    );
-                }
-            }
-            
-            // Apply category filter
-            if (currentCategoryFilter !== 'all') {
-                filteredCustomers = filteredCustomers.filter(c => 
-                    c.categories && c.categories.includes(currentCategoryFilter)
-                );
-            }
-            
-            filteredCustomers.forEach(customer => {
-                // Get status class
-                let statusClass;
-                switch (customer.status) {
-                    case 'active': statusClass = 'bg-green-100 text-green-800'; break;
-                    case 'possible': statusClass = 'bg-yellow-100 text-yellow-800'; break;
-                    case 'hard': statusClass = 'bg-red-100 text-red-800'; break;
-                    case 'not_possible': statusClass = 'bg-gray-100 text-gray-800'; break;
-                    case 'stopped': statusClass = 'bg-black text-white'; break;
-                    default: statusClass = 'bg-gray-100 text-gray-800';
-                }
-                
-                // Get competitor tags
-                let competitorTags = '';
-                if (customer.competitorIds.length > 0) {
-                    customer.competitorIds.forEach(id => {
-                        const competitor = data.competitors.find(c => c.id === id);
-                        if (competitor) {
-                            competitorTags += `
-                                <span class="competitor-tag" style="background-color: ${competitor.color};">
-                                    ${competitor.name}
-                                </span>
-                            `;
-                        }
-                    });
-                } else {
-                    competitorTags = 'None';
-                }
-                
-                // Get category tags
-                let categoryTags = '';
-                if (customer.categories && customer.categories.length > 0) {
-                    customer.categories.forEach(category => {
-                        let categoryClass = '';
-                        switch (category) {
-                            case 'paints': categoryClass = 'category-paints'; break;
-                            case 'alkyde': categoryClass = 'category-alkyde'; break;
-                            case 'cosmetics': categoryClass = 'category-cosmetics'; break;
-                        }
-                        
-                        categoryTags += `
-                            <span class="category-badge ${categoryClass}">
-                                ${category.charAt(0).toUpperCase() + category.slice(1)}
-                            </span>
-                        `;
-                    });
-                } else {
-                    categoryTags = 'None';
-                }
-                
-                // Format dates
-                let lastVisitFormatted = customer.lastVisit ? new Date(customer.lastVisit).toLocaleDateString() : 'Never';
-                let nextVisitFormatted = customer.nextVisit ? new Date(customer.nextVisit).toLocaleDateString() : 'Not scheduled';
-                
-                // Create row
-                const row = document.createElement('tr');
-                row.className = 'border-b';
-                row.setAttribute('data-customer-id', customer.id);
-                row.innerHTML = `
-                    <td class="p-2">${customer.name}</td>
-                    <td class="p-2"><span class="px-2 py-1 rounded-full text-xs ${statusClass}">${customer.status.replace('_', ' ')}</span></td>
-                    <td class="p-2">${categoryTags}</td>
-                    <td class="p-2">${competitorTags}</td>
-                    <td class="p-2">${customer.lat.toFixed(4)}, ${customer.lng.toFixed(4)}</td>
-                    <td class="p-2">${lastVisitFormatted}</td>
-                    <td class="p-2">${nextVisitFormatted}</td>
-                    <td class="p-2 remarks-cell">${customer.remarks || ''}</td>
-                    <td class="p-2">
-                        <button onclick="editCustomer(${customer.id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
-                        ${currentUser.role === 'admin' ? `
-                        <button onclick="deleteCustomer(${customer.id})" class="text-red-600 hover:text-red-800">Delete</button>
-                        ` : ''}
-                    </td>
-                `;
-                
-                tableBody.appendChild(row);
-            });
-        }
-        
-        // Render competitors table (admin only)
-        function renderCompetitors() {
-            const tableBody = document.getElementById('competitorTableBody');
-            if (!tableBody) return;
-            
-            tableBody.innerHTML = '';
-            
-            data.competitors.forEach(competitor => {
-                // Create row
-                const row = document.createElement('tr');
-                row.className = 'border-b';
-                row.innerHTML = `
-                    <td class="p-2">${competitor.name}</td>
-                    <td class="p-2">
-                        <span class="color-circle" style="background-color: ${competitor.color};"></span>
-                    </td>
-                    <td class="p-2">
-                        <button onclick="editCompetitor(${competitor.id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
-                        <button onclick="deleteCompetitor(${competitor.id})" class="text-red-600 hover:text-red-800">Delete</button>
-                    </td>
-                `;
-                
-                tableBody.appendChild(row);
-            });
-        }
-        
-        // Render users table (admin only)
-        function renderUsers() {
-            const tableBody = document.getElementById('userTableBody');
-            if (!tableBody) return;
-            
-            tableBody.innerHTML = '';
-            
-            data.users.forEach(user => {
-                // Create row
-                const row = document.createElement('tr');
-                row.className = 'border-b';
-                row.innerHTML = `
-                    <td class="p-2">${user.username}</td>
-                    <td class="p-2">${user.fullName || ''}</td>
-                    <td class="p-2">
-                        <span class="px-2 py-1 rounded-full text-xs ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">
-                            ${user.role === 'admin' ? 'Administrator' : 'Salesperson'}
-                        </span>
-                    </td>
-                    <td class="p-2">
-                        <button onclick="editUser(${user.id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
-                        ${user.id !== currentUser.id ? `
-                        <button onclick="deleteUser(${user.id})" class="text-red-600 hover:text-red-800">Delete</button>
-                        ` : ''}
-                    </td>
-                `;
-                
-                tableBody.appendChild(row);
-            });
-        }
-        
-        // Render salespersons table (admin only)
-        function renderSalespersons() {
-            const tableBody = document.getElementById('salespersonTableBody');
-            if (!tableBody) return;
-            
-            tableBody.innerHTML = '';
-            
-            const salespersons = data.users.filter(u => u.role === 'salesperson');
-            
-            salespersons.forEach(salesperson => {
-                // Get tracking status
-                let status = 'Inactive';
-                let lastLocation = 'Unknown';
-                let lastUpdate = 'Never';
-                
-                if (salesperson.tracking && salesperson.tracking.length > 0) {
-                    const lastTrack = salesperson.tracking[salesperson.tracking.length - 1];
-                    const trackTime = new Date(lastTrack.timestamp);
-                    const now = new Date();
-                    const minutesAgo = Math.floor((now - trackTime) / (1000 * 60));
-                    
-                    status = minutesAgo < 15 ? 'Active' : 'Inactive';
-                    lastLocation = `${lastTrack.lat.toFixed(4)}, ${lastTrack.lng.toFixed(4)}`;
-                    lastUpdate = `${minutesAgo} minutes ago`;
-                }
-                
-                // Count customers added today
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                const customersAddedToday = data.customers.filter(c => 
-                    c.addedBy === salesperson.id && 
-                    new Date(c.addedOn) >= today
-                ).length;
-                
-                // Create row
-                const row = document.createElement('tr');
-                row.className = 'border-b';
-                row.innerHTML = `
-                    <td class="p-2">${salesperson.fullName}</td>
-                    <td class="p-2">
-                        ${status === 'Active' ? 
-                            `<span class="flex items-center"><span class="tracking-dot"></span> Active</span>` : 
-                            'Inactive'
-                        }
-                    </td>
-                    <td class="p-2">${lastLocation}</td>
-                    <td class="p-2">${lastUpdate}</td>
-                    <td class="p-2">${customersAddedToday}</td>
-                    <td class="p-2">
-                        <button onclick="trackSalesperson(${salesperson.id})" class="text-blue-600 hover:text-blue-800">Track on Map</button>
-                    </td>
-                `;
-                
-                tableBody.appendChild(row);
-            });
-        }
-        
-        // Export customers to CSV (admin only)
-        function exportCustomersToCSV() {
             try {
-                // Create CSV header
-                let csvRows = [];
-                csvRows.push(['ID', 'Name', 'Status', 'Categories', 'Contact', 'Latitude', 'Longitude', 'Competitors', 'Last Visit', 'Next Visit', 'Remarks', 'Added By', 'Added On']);
+              // Find user in data
+              const userIndex = data.users.findIndex(u => u.id === currentUser.id);
+              
+              if (userIndex !== -1) {
+                // Initialize tracking array if it doesn't exist
+                if (!data.users[userIndex].tracking) {
+                  data.users[userIndex].tracking = [];
+                }
                 
-                // Add each customer as a row
-                data.customers.forEach(customer => {
-                    // Get competitor names
-                    let competitorNames = '';
-                    if (customer.competitorIds.length > 0) {
-                        const competitorsList = customer.competitorIds.map(id => {
-                            const competitor = data.competitors.find(c => c.id === id);
-                            return competitor ? competitor.name : 'Unknown';
-                        });
-                        competitorNames = competitorsList.join(', ');
-                    }
-                    
-                    // Get category names
-                    let categoryNames = '';
-                    if (customer.categories && customer.categories.length > 0) {
-                        categoryNames = customer.categories.join(', ');
-                    }
-                    
-                    // Get added by info
-                    let addedBy = '';
-                    if (customer.addedBy) {
-                        const addedByUser = data.users.find(u => u.id === customer.addedBy);
-                        if (addedByUser) {
-                            addedBy = addedByUser.fullName;
-                        }
-                    }
-                    
-                    // Format values properly for CSV
-                    const formatForCsv = (value) => {
-                        if (value === null || value === undefined) return '';
-                        value = String(value);
-                        // If value contains comma, quote, or newline, wrap in quotes and escape quotes
-                        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-                            return '"' + value.replace(/"/g, '""') + '"';
-                        }
-                        return value;
-                    };
-                    
-                    // Create row
-                    csvRows.push([
-                        customer.id,
-                        formatForCsv(customer.name),
-                        formatForCsv(customer.status.replace('_', ' ')),
-                        formatForCsv(categoryNames),
-                        formatForCsv(customer.contact || ''),
-                        customer.lat,
-                        customer.lng,
-                        formatForCsv(competitorNames),
-                        formatForCsv(customer.lastVisit || ''),
-                        formatForCsv(customer.nextVisit || ''),
-                        formatForCsv(customer.remarks || ''),
-                        formatForCsv(addedBy),
-                        formatForCsv(customer.addedOn ? new Date(customer.addedOn).toLocaleString() : '')
-                    ]);
+                // Add tracking data
+                data.users[userIndex].tracking.push(trackingData);
+                
+                // Limit tracking history to last 100 entries
+                if (data.users[userIndex].tracking.length > 100) {
+                  data.users[userIndex].tracking.shift();
+                }
+                
+                // Update in Firebase
+                await db.collection('users').doc(currentUser.id).update({
+                  tracking: data.users[userIndex].tracking
                 });
                 
-                // Convert rows to CSV string
-                const csvString = csvRows.map(row => row.join(',')).join('\n');
+                // Update current user
+                currentUser = data.users[userIndex];
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 
-                // Create download
-                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                
-                // Create temporary link and trigger download
-                const downloadLink = document.createElement('a');
-                downloadLink.setAttribute('href', url);
-                downloadLink.setAttribute('download', 'customers.csv');
-                document.body.appendChild(downloadLink);
-                downloadLink.click();
-                
-                // Clean up
-                document.body.removeChild(downloadLink);
-                setTimeout(() => URL.revokeObjectURL(url), 100);
-                
-                console.log("CSV export completed successfully");
+                console.log('Location updated');
+              }
             } catch (error) {
-                console.error("Error exporting CSV:", error);
-                alert("There was an error exporting the CSV file. Please try again.");
+              console.error('Error updating location:', error);
             }
+          },
+          (error) => {
+            console.error('Error getting location:', error);
+          }
+        );
+      }, 60000); // Update every minute
+    }
+    
+    // Stop tracking
+    function stopTracking() {
+      if (trackingInterval) {
+        clearInterval(trackingInterval);
+        trackingInterval = null;
+      }
+    }
+    
+    // Switch tab
+    function switchTab(tabId) {
+      // Hide all tab contents
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Show selected tab content
+      document.getElementById(tabId).classList.add('active');
+      
+      // Update tab buttons
+      document.querySelectorAll('.tab-button').forEach(button => {
+        if (button.getAttribute('data-tab') === tabId) {
+          button.classList.add('border-blue-500', 'text-blue-600');
+          button.classList.remove('border-transparent', 'text-gray-500');
+        } else {
+          button.classList.remove('border-blue-500', 'text-blue-600');
+          button.classList.add('border-transparent', 'text-gray-500');
+        }
+      });
+    }
+    
+    // Setup event listeners
+    function setupListeners() {
+      // Tab buttons
+      document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', function() {
+          const tabId = this.getAttribute('data-tab');
+          switchTab(tabId);
+        });
+      });
+      
+      // Map filters
+      document.getElementById('mapStatusFilter').addEventListener('change', refreshMarkers);
+      document.getElementById('mapCategoryFilter').addEventListener('change', refreshMarkers);
+      document.getElementById('mapCompetitorFilter').addEventListener('change', refreshMarkers);
+      document.getElementById('showCompetitors').addEventListener('change', refreshCompetitorMarkers);
+      document.getElementById('showSalespersons').addEventListener('change', refreshSalespersonMarkers);
+      
+      // Customer filters
+      document.getElementById('customerStatusFilter').addEventListener('change', renderCustomers);
+      document.getElementById('customerCategoryFilter').addEventListener('change', renderCustomers);
+      document.getElementById('customerCompetitorFilter').addEventListener('change', renderCustomers);
+      
+      // Customer form buttons
+      document.getElementById('addCustomerButton').addEventListener('click', function() {
+        document.getElementById('customerForm').classList.remove('hidden');
+      });
+      
+      document.getElementById('cancelCustomerButton').addEventListener('click', cancelEdit);
+      document.getElementById('saveCustomerButton').addEventListener('click', saveCustomer);
+      
+      // Competitor form buttons
+      document.getElementById('addCompetitorButton').addEventListener('click', function() {
+        document.getElementById('competitorForm').classList.remove('hidden');
+      });
+      
+      document.getElementById('cancelCompetitorButton').addEventListener('click', cancelCompetitorEdit);
+      document.getElementById('saveCompetitorButton').addEventListener('click', saveCompetitor);
+      
+      // User form buttons
+      document.getElementById('addUserButton').addEventListener('click', function() {
+        document.getElementById('userForm').classList.remove('hidden');
+      });
+      
+      document.getElementById('cancelUserButton').addEventListener('click', cancelUserEdit);
+      document.getElementById('saveUserButton').addEventListener('click', saveUser);
+      
+      // Export button
+      document.getElementById('exportCustomersButton').addEventListener('click', exportCustomersToCSV);
+      
+      // Logout button
+      document.getElementById('logoutButton').addEventListener('click', logout);
+    }
+    
+    // Setup login listeners
+    function setupLoginListeners() {
+      document.getElementById('loginButton').addEventListener('click', login);
+      
+      // Allow login with Enter key
+      document.getElementById('password').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          login();
+        }
+      });
+    }
+    
+    // Login function
+    async function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      
+      if (!username || !password) {
+        document.getElementById('loginError').textContent = 'Please enter username and password';
+        document.getElementById('loginError').classList.remove('hidden');
+        return;
+      }
+      
+      try {
+        // Load users if not loaded yet
+        if (data.users.length === 0) {
+          await loadFromFirebase();
         }
         
-        // Make functions available globally
-        window.deleteCustomer = deleteCustomer;
-        window.editCustomer = editCustomer;
-        window.deleteCompetitor = deleteCompetitor;
-        window.editCompetitor = editCompetitor;
-        window.deleteUser = deleteUser;
-        window.editUser = editUser;
-        window.trackSalesperson = trackSalesperson;
-    </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'966461c045da5453',t:'MTc1MzcwNTc2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+        // Find user
+        const user = data.users.find(u => u.username === username && u.password === password);
+        
+        if (user) {
+          currentUser = user;
+          loginSuccess();
+        } else {
+          document.getElementById('loginError').textContent = 'Invalid username or password';
+          document.getElementById('loginError').classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error("Login error:", error);
+        document.getElementById('loginError').textContent = 'An error occurred. Please try again.';
+        document.getElementById('loginError').classList.remove('hidden');
+      }
+    }
+    
+    // Login success
+    async function loginSuccess() {
+      isAuthenticated = true;
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('mainContent').classList.remove('hidden');
+      
+      // Set user display
+      document.getElementById('currentUserDisplay').textContent = currentUser.fullName;
+      
+      // Set role badge
+      const roleBadge = document.getElementById('userRoleBadge');
+      if (currentUser.role === 'admin') {
+        roleBadge.textContent = 'Administrator';
+        roleBadge.classList.add('bg-purple-100', 'text-purple-800');
+        document.getElementById('adminOnlySection').classList.remove('hidden');
+        document.getElementById('exportDiv').classList.remove('hidden');
+      } else {
+        roleBadge.textContent = 'Salesperson';
+        roleBadge.classList.add('bg-blue-100', 'text-blue-800');
+        document.getElementById('adminOnlySection').classList.add('hidden');
+        document.getElementById('exportDiv').classList.add('hidden');
+      }
+      
+      // Initialize the app
+      initMap();
+      await loadFromFirebase(); // Load data from Firebase
+      setupListeners();
+      updateCompetitorCheckboxes();
+      updateFilterDropdowns();
+      renderCustomers();
+      renderCompetitors();
+      refreshMarkers();
+      
+      if (currentUser.role === 'admin') {
+        renderUsers();
+        renderSalespersons();
+      }
+      
+      // Start tracking for salespersons
+      if (currentUser.role === 'salesperson') {
+        startTracking();
+      }
+    }
+    
+    // Logout function
+    function logout() {
+      isAuthenticated = false;
+      currentUser = null;
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('currentUser');
+      
+      // Stop tracking if active
+      stopTracking();
+      
+      // Reset forms
+      cancelEdit();
+      cancelCompetitorEdit();
+      cancelUserEdit();
+      
+      // Show login overlay
+      document.getElementById('loginOverlay').classList.remove('hidden');
+      document.getElementById('mainContent').classList.add('hidden');
+      document.getElementById('loginError').classList.add('hidden');
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      setupLoginListeners();
+      
+      // Check if already logged in
+      const savedAuth = localStorage.getItem('isAuthenticated');
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedAuth === 'true' && savedUser) {
+        try {
+          currentUser = JSON.parse(savedUser);
+          loginSuccess();
+        } catch (e) {
+          console.error("Error parsing saved user:", e);
+          logout();
+        }
+      }
+    });
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96652976550c545a',t:'MTc1MzcxMzk0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
