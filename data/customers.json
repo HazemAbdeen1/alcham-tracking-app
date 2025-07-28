@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "Damascus Pharmaceuticals",
+    "status": "active",
+    "contact": "+963 11 123 4567",
+    "lat": 33.5138,
+    "lng": 36.2765,
+    "competitorIds": [1],
+    "categories": ["paints", "cosmetics"],
+    "remarks": "Interested in our new product line",
+    "lastVisit": "2023-05-10",
+    "nextVisit": "2023-06-15",
+    "addedBy": 1,
+    "addedOn": "2023-05-10T10:30:00"
+  },
+  {
+    "id": 2,
+    "name": "Aleppo Medical Supplies",
+    "status": "hard",
+    "contact": "+963 21 987 6543",
+    "lat": 36.2021,
+    "lng": 37.1343,
+    "competitorIds": [2],
+    "categories": ["alkyde"],
+    "remarks": "Need to discuss pricing",
+    "lastVisit": "2023-05-05",
+    "nextVisit": "2023-06-20",
+    "addedBy": 1,
+    "addedOn": "2023-05-05T14:15:00"
+  }
+]
