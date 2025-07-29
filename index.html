@@ -3,69 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Al Cham Chemical Plant - Territory Tracking</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-  
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
-  
+  <title>Territory Tracking System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" rel="stylesheet">
   <style>
-    #map {
-      height: 500px;
+    #map { 
+      height: 500px; 
       width: 100%;
-    }
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
+      z-index: 1;
     }
     .custom-marker {
       width: 30px;
       height: 30px;
       border-radius: 50%;
-      text-align: center;
-      line-height: 30px;
-      color: white;
-      font-weight: bold;
-      border: 2px solid white;
-    }
-    .status-active {
-      background-color: #10B981;
-    }
-    .status-inactive {
-      background-color: #6B7280;
-    }
-    .status-hard {
-      background-color: #EF4444;
-    }
-    .status-potential {
-      background-color: #F59E0B;
-    }
-    .competitor-marker {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 2px solid white;
-      background-color: #EF4444;
-    }
-    .salesperson-marker {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      border: 2px solid white;
-      background-color: #3B82F6;
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
       font-weight: bold;
-      font-size: 14px;
+      border: 2px solid white;
+    }
+    .status-active { background-color: #10B981; }
+    .status-inactive { background-color: #6B7280; }
+    .status-hard { background-color: #EF4444; }
+    .status-potential { background-color: #F59E0B; }
+    .competitor-marker {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: #DC2626;
+      border: 2px solid white;
+    }
+    .salesperson-marker {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: #3B82F6;
+      border: 2px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
     }
     .toast {
       position: fixed;
@@ -84,124 +63,31 @@
       opacity: 1;
     }
     .modal {
+      display: none;
       position: fixed;
       top: 0;
       left: 0;
-      right: 0;
-      bottom: 0;
+      width: 100%;
+      height: 100%;
       background-color: rgba(0, 0, 0, 0.5);
-      display: none;
-      align-items: center;
+      z-index: 1000;
       justify-content: center;
-      z-index: 9999;
+      align-items: center;
     }
     .modal-content {
       background-color: white;
+      padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      width: 90%;
       max-width: 500px;
+      width: 100%;
       max-height: 90vh;
       overflow-y: auto;
     }
-    .map-mode-toggle {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1000;
-      background-color: white;
-      border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      padding: 5px;
+    .tab-content {
+      display: none;
     }
-    .map-mode-toggle button {
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .map-mode-toggle button.active {
-      background-color: #3B82F6;
-      color: white;
-    }
-    .map-mode-toggle button:not(.active) {
-      background-color: #F3F4F6;
-      color: #374151;
-    }
-    .add-customer-tooltip {
-      background-color: white;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      padding: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      max-width: 300px;
-    }
-    .add-customer-tooltip .title {
-      font-weight: bold;
-      margin-bottom: 8px;
-    }
-    .add-customer-tooltip input,
-    .add-customer-tooltip select {
-      width: 100%;
-      margin-bottom: 8px;
-      padding: 4px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-    .add-customer-tooltip button {
-      padding: 4px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .add-customer-tooltip .save-btn {
-      background-color: #3B82F6;
-      color: white;
-      margin-right: 4px;
-    }
-    .add-customer-tooltip .cancel-btn {
-      background-color: #9CA3AF;
-      color: white;
-    }
-    .comment-item {
-      border-left: 3px solid #3B82F6;
-      padding-left: 10px;
-      margin-bottom: 8px;
-    }
-    .comment-date {
-      font-size: 12px;
-      color: #6B7280;
-    }
-    .comment-user {
-      font-size: 12px;
-      font-weight: 600;
-      color: #4B5563;
-    }
-    .comment-text {
-      font-size: 14px;
-      margin-top: 2px;
-    }
-    .location-pulse {
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0% {
-        transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
-      }
-      70% {
-        transform: scale(1);
-        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
-      }
-      100% {
-        transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
-      }
-    }
-    .location-sharing-active {
-      background-color: #10B981;
-    }
-    .location-sharing-inactive {
-      background-color: #6B7280;
+    .tab-content.active {
+      display: block;
     }
   </style>
 </head>
@@ -209,17 +95,16 @@
   <!-- Toast Notification -->
   <div id="toast" class="toast">Message</div>
 
-  <!-- Login Overlay -->
-  <div id="loginOverlay" class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
+  <!-- Login Screen -->
+  <div id="loginScreen" class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
     <div class="bg-white p-8 rounded-lg shadow-lg w-96">
       <div class="flex justify-center mb-6">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" class="w-16 h-16">
-          <path fill="#3882f6" d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24Zm0 192a88 88 0 1 1 88-88 88.1 88.1 0 0 1-88 88Z"/>
-          <path fill="#3882f6" d="M128 72a56 56 0 0 0 0 112 56 56 0 0 0 0-112Zm0 96a40 40 0 1 1 40-40 40.05 40.05 0 0 1-40 40Z"/>
-          <path fill="#3882f6" d="M128 104a24 24 0 1 0 24 24 24 24 0 0 0-24-24Z"/>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       </div>
-      <h2 class="text-2xl font-bold text-center mb-6">Al Cham Chemical Plant</h2>
+      <h2 class="text-2xl font-bold text-center mb-6">Territory Tracking System</h2>
       <div class="mb-4">
         <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
         <input type="text" id="username" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -228,287 +113,39 @@
         <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
         <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
-      <button id="loginButton" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+      <button id="loginBtn" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
         Login
       </button>
       <div id="loginError" class="mt-4 text-red-600 text-sm text-center hidden"></div>
     </div>
   </div>
 
-  <!-- Add User Modal -->
-  <div id="addUserModal" class="modal">
-    <div class="modal-content p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold">Add New User</h2>
-        <button class="close-modal text-gray-500 hover:text-gray-700">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      
-      <div class="mb-4">
-        <label for="newUserFullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-        <input type="text" id="newUserFullName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-      </div>
-      
-      <div class="mb-4">
-        <label for="newUsername" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-        <input type="text" id="newUsername" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-      </div>
-      
-      <div class="mb-4">
-        <label for="newUserPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-        <input type="password" id="newUserPassword" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-      </div>
-      
-      <div class="mb-4">
-        <label for="newUserRole" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-        <select id="newUserRole" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="admin">Administrator</option>
-          <option value="salesperson">Salesperson</option>
-        </select>
-      </div>
-      
-      <div class="mb-6">
-        <label for="newUserStatus" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-        <select id="newUserStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-      </div>
-      
-      <div class="flex justify-end">
-        <button id="saveUserBtn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-          Save User
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Add Competitor Modal -->
-  <div id="addCompetitorModal" class="modal">
-    <div class="modal-content p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold">Add New Competitor</h2>
-        <button class="close-modal text-gray-500 hover:text-gray-700">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      
-      <div class="mb-4">
-        <label for="newCompetitorName" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-        <input type="text" id="newCompetitorName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-      </div>
-      
-      <div class="mb-4">
-        <label for="newCompetitorCategory" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-        <select id="newCompetitorCategory" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="paints">Paints</option>
-          <option value="alkyde">Alkyde</option>
-          <option value="cosmetics">Cosmetics</option>
-        </select>
-      </div>
-      
-      <div class="mb-4">
-        <label for="newCompetitorStrength" class="block text-sm font-medium text-gray-700 mb-1">Strength</label>
-        <select id="newCompetitorStrength" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
-        </select>
-      </div>
-      
-      <div class="mb-6">
-        <label for="newCompetitorLocation" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-        <input type="text" id="newCompetitorLocation" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-      </div>
-      
-      <div class="flex justify-end">
-        <button id="saveCompetitorBtn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-          Save Competitor
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Add Customer Modal -->
-  <div id="addCustomerModal" class="modal">
-    <div class="modal-content p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold">Add New Customer</h2>
-        <button class="close-modal text-gray-500 hover:text-gray-700">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      
-      <div class="mb-4">
-        <label for="newCustomerName" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-        <input type="text" id="newCustomerName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-      </div>
-      
-      <div class="mb-4">
-        <label for="newCustomerCategory" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-        <select id="newCustomerCategory" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="paints">Paints</option>
-          <option value="alkyde">Alkyde</option>
-          <option value="cosmetics">Cosmetics</option>
-        </select>
-      </div>
-      
-      <div class="mb-4">
-        <label for="newCustomerStatus" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-        <select id="newCustomerStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="hard">Hard</option>
-          <option value="potential">Potential</option>
-        </select>
-      </div>
-      
-      <div class="mb-4">
-        <label for="newCustomerAddress" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-        <input type="text" id="newCustomerAddress" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-      </div>
-      
-      <div class="mb-4">
-        <label for="newCustomerContact" class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
-        <input type="text" id="newCustomerContact" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-      </div>
-      
-      <div class="mb-4">
-        <label for="newCustomerCompetitor" class="block text-sm font-medium text-gray-700 mb-1">Main Competitor</label>
-        <select id="newCustomerCompetitor" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="">None</option>
-          <!-- Competitor options will be added dynamically -->
-        </select>
-      </div>
-      
-      <div class="flex justify-end">
-        <button id="saveCustomerBtn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-          Save Customer
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Edit Customer Modal -->
-  <div id="editCustomerModal" class="modal">
-    <div class="modal-content p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold">Edit Customer</h2>
-        <button class="close-modal text-gray-500 hover:text-gray-700">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      
-      <input type="hidden" id="editCustomerId">
-      
-      <div class="mb-4">
-        <label for="editCustomerName" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-        <input type="text" id="editCustomerName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-      </div>
-      
-      <div class="mb-4">
-        <label for="editCustomerCategory" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-        <select id="editCustomerCategory" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="paints">Paints</option>
-          <option value="alkyde">Alkyde</option>
-          <option value="cosmetics">Cosmetics</option>
-        </select>
-      </div>
-      
-      <div class="mb-4">
-        <label for="editCustomerStatus" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-        <select id="editCustomerStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="hard">Hard</option>
-          <option value="potential">Potential</option>
-        </select>
-      </div>
-      
-      <div class="mb-4">
-        <label for="editCustomerAddress" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-        <input type="text" id="editCustomerAddress" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-      </div>
-      
-      <div class="mb-4">
-        <label for="editCustomerContact" class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
-        <input type="text" id="editCustomerContact" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-      </div>
-      
-      <div class="mb-4">
-        <label for="editCustomerCompetitor" class="block text-sm font-medium text-gray-700 mb-1">Main Competitor</label>
-        <select id="editCustomerCompetitor" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="">None</option>
-          <!-- Competitor options will be added dynamically -->
-        </select>
-      </div>
-      
-      <div class="mb-4">
-        <label for="editCustomerNextVisit" class="block text-sm font-medium text-gray-700 mb-1">Next Visit Date</label>
-        <input type="date" id="editCustomerNextVisit" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-      </div>
-      
-      <div class="mb-6">
-        <h3 class="text-sm font-medium text-gray-700 mb-2">Comments</h3>
-        <div id="customerComments" class="max-h-40 overflow-y-auto mb-4 p-2 bg-gray-50 rounded-md">
-          <!-- Comments will be added here dynamically -->
-          <div class="text-sm text-gray-500 italic">No comments yet</div>
-        </div>
-        
-        <div class="flex items-start">
-          <div class="flex-grow">
-            <textarea id="newComment" rows="2" placeholder="Add a comment..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-          </div>
-          <button id="addCommentBtn" class="ml-2 mt-1 bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-            Add
-          </button>
-        </div>
-      </div>
-      
-      <div class="flex justify-end">
-        <button id="updateCustomerBtn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-          Update Customer
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- Main Content -->
-  <div id="mainContent" style="display: none;">
+  <div id="mainContent" class="hidden">
     <!-- Header -->
     <header class="bg-white shadow">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <div class="flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" class="w-10 h-10 mr-2">
-            <path fill="#3882f6" d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24Zm0 192a88 88 0 1 1 88-88 88.1 88.1 0 0 1-88 88Z"/>
-            <path fill="#3882f6" d="M128 72a56 56 0 0 0 0 112 56 56 0 0 0 0-112Zm0 96a40 40 0 1 1 40-40 40.05 40.05 0 0 1-40 40Z"/>
-            <path fill="#3882f6" d="M128 104a24 24 0 1 0 24 24 24 24 0 0 0-24-24Z"/>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <h1 class="text-xl font-bold text-gray-900">Al Cham Chemical Plant</h1>
+          <h1 class="text-xl font-bold text-gray-900">Territory Tracking System</h1>
         </div>
         <div class="flex items-center">
           <div id="locationSharingControls" class="mr-4 hidden">
-            <button id="toggleLocationSharingBtn" class="flex items-center px-3 py-1 rounded-md bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm">
-              <span id="locationSharingStatus" class="inline-block w-3 h-3 rounded-full mr-2 location-sharing-inactive"></span>
-              <span id="locationSharingText">Share Location</span>
+            <button id="toggleLocationBtn" class="flex items-center px-3 py-1 rounded-md bg-gray-200 hover:bg-gray-300">
+              <span id="locationStatus" class="inline-block w-3 h-3 rounded-full mr-2 bg-gray-500"></span>
+              <span id="locationText">Share Location</span>
             </button>
           </div>
           <div class="mr-4 text-right">
-            <span class="block text-sm text-gray-700" id="currentUserDisplay">User Name</span>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" id="userRoleBadge">
+            <span class="block text-sm text-gray-700" id="userDisplay">User Name</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800" id="roleDisplay">
               Role
             </span>
           </div>
-          <button id="logoutButton" class="bg-gray-200 text-gray-700 py-1 px-3 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm">
+          <button id="logoutBtn" class="bg-gray-200 text-gray-700 py-1 px-3 rounded-md hover:bg-gray-300">
             Logout
           </button>
         </div>
@@ -529,7 +166,7 @@
           <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="competitors-tab">
             Competitors
           </button>
-          <button id="adminOnlyTab" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="users-tab">
+          <button id="adminTab" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 hidden" data-tab="users-tab">
             Users
           </button>
         </nav>
@@ -538,7 +175,13 @@
       <!-- Map Tab -->
       <div id="map-tab" class="tab-content active">
         <div class="bg-white shadow rounded-lg p-6 mb-6">
-          <h2 class="text-lg font-medium text-gray-900 mb-4">Territory Map</h2>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-medium text-gray-900">Territory Map</h2>
+            <div class="flex space-x-2">
+              <button id="viewModeBtn" class="bg-blue-600 text-white py-1 px-3 rounded-md">View Mode</button>
+              <button id="addModeBtn" class="bg-gray-200 text-gray-700 py-1 px-3 rounded-md">Add Customer</button>
+            </div>
+          </div>
           
           <!-- Map Filters -->
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -565,7 +208,7 @@
               <label for="mapCompetitorFilter" class="block text-sm font-medium text-gray-700 mb-1">Competitor</label>
               <select id="mapCompetitorFilter" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 <option value="all">All Competitors</option>
-                <!-- Competitor options will be added dynamically -->
+                <!-- Will be populated dynamically -->
               </select>
             </div>
             <div>
@@ -584,15 +227,7 @@
           </div>
           
           <!-- Map Container -->
-          <div class="relative">
-            <div id="map" class="rounded-lg overflow-hidden"></div>
-            
-            <!-- Map Mode Toggle -->
-            <div class="map-mode-toggle">
-              <button id="viewModeBtn" class="active">View Mode</button>
-              <button id="addModeBtn">Add Customer</button>
-            </div>
-          </div>
+          <div id="map" class="rounded-lg overflow-hidden"></div>
         </div>
       </div>
 
@@ -602,14 +237,14 @@
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-lg font-medium text-gray-900">Customers</h2>
             <div class="flex space-x-2">
-              <button id="exportCustomersBtn" class="bg-green-600 text-white py-1 px-3 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-sm flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button id="exportCustomersBtn" class="bg-green-600 text-white py-1 px-3 rounded-md hover:bg-green-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 Export CSV
               </button>
-              <button id="addCustomerBtn" class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button id="addCustomerBtn" class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Add Customer
@@ -658,7 +293,7 @@
                 </tr>
               </thead>
               <tbody id="customerTableBody" class="bg-white divide-y divide-gray-200">
-                <!-- Customer rows will be added here dynamically -->
+                <!-- Will be populated dynamically -->
                 <tr>
                   <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">Loading customers...</td>
                 </tr>
@@ -673,8 +308,8 @@
         <div class="bg-white shadow rounded-lg p-6 mb-6">
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-lg font-medium text-gray-900">Competitors</h2>
-            <button id="addCompetitorBtn" class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button id="addCompetitorBtn" class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
               Add Competitor
@@ -712,7 +347,7 @@
                 </tr>
               </thead>
               <tbody id="competitorTableBody" class="bg-white divide-y divide-gray-200">
-                <!-- Competitor rows will be added here dynamically -->
+                <!-- Will be populated dynamically -->
                 <tr>
                   <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">Loading competitors...</td>
                 </tr>
@@ -727,8 +362,8 @@
         <div class="bg-white shadow rounded-lg p-6 mb-6">
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-lg font-medium text-gray-900">Users</h2>
-            <button id="addUserBtn" class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button id="addUserBtn" class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
               Add User
@@ -765,7 +400,7 @@
                 </tr>
               </thead>
               <tbody id="userTableBody" class="bg-white divide-y divide-gray-200">
-                <!-- User rows will be added here dynamically -->
+                <!-- Will be populated dynamically -->
                 <tr>
                   <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">Loading users...</td>
                 </tr>
@@ -777,93 +412,273 @@
     </main>
   </div>
 
-  <script>
-    // Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyCMSPqRbQaBqHA2NsdlUc2nOaPx9XxBH2E",
-      authDomain: "backend-b4231.firebaseapp.com",
-      projectId: "backend-b4231",
-      storageBucket: "backend-b4231.firebasestorage.app",
-      messagingSenderId: "938964208227",
-      appId: "1:938964208227:web:d14d7c45a83027eeb34656",
-      measurementId: "G-LVG8XR2067"
-    };
+  <!-- Add Customer Modal -->
+  <div id="addCustomerModal" class="modal">
+    <div class="modal-content">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">Add New Customer</h2>
+        <button class="close-modal text-gray-500 hover:text-gray-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <div class="mb-4">
+        <label for="newCustomerName" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+        <input type="text" id="newCustomerName" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+      </div>
+      
+      <div class="mb-4">
+        <label for="newCustomerCategory" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+        <select id="newCustomerCategory" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <option value="paints">Paints</option>
+          <option value="alkyde">Alkyde</option>
+          <option value="cosmetics">Cosmetics</option>
+        </select>
+      </div>
+      
+      <div class="mb-4">
+        <label for="newCustomerStatus" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+        <select id="newCustomerStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="hard">Hard</option>
+          <option value="potential">Potential</option>
+        </select>
+      </div>
+      
+      <div class="mb-4">
+        <label for="newCustomerAddress" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+        <input type="text" id="newCustomerAddress" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+      </div>
+      
+      <div class="mb-4">
+        <label for="newCustomerContact" class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+        <input type="text" id="newCustomerContact" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+      </div>
+      
+      <div class="mb-4">
+        <label for="newCustomerCompetitor" class="block text-sm font-medium text-gray-700 mb-1">Main Competitor</label>
+        <select id="newCustomerCompetitor" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <option value="">None</option>
+          <!-- Will be populated dynamically -->
+        </select>
+      </div>
+      
+      <div class="flex justify-end">
+        <button id="saveCustomerBtn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+          Save Customer
+        </button>
+      </div>
+    </div>
+  </div>
 
+  <!-- Edit Customer Modal -->
+  <div id="editCustomerModal" class="modal">
+    <div class="modal-content">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">Edit Customer</h2>
+        <button class="close-modal text-gray-500 hover:text-gray-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <input type="hidden" id="editCustomerId">
+      
+      <div class="mb-4">
+        <label for="editCustomerName" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+        <input type="text" id="editCustomerName" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+      </div>
+      
+      <div class="mb-4">
+        <label for="editCustomerCategory" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+        <select id="editCustomerCategory" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <option value="paints">Paints</option>
+          <option value="alkyde">Alkyde</option>
+          <option value="cosmetics">Cosmetics</option>
+        </select>
+      </div>
+      
+      <div class="mb-4">
+        <label for="editCustomerStatus" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+        <select id="editCustomerStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="hard">Hard</option>
+          <option value="potential">Potential</option>
+        </select>
+      </div>
+      
+      <div class="mb-4">
+        <label for="editCustomerAddress" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+        <input type="text" id="editCustomerAddress" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+      </div>
+      
+      <div class="mb-4">
+        <label for="editCustomerContact" class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+        <input type="text" id="editCustomerContact" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+      </div>
+      
+      <div class="mb-4">
+        <label for="editCustomerCompetitor" class="block text-sm font-medium text-gray-700 mb-1">Main Competitor</label>
+        <select id="editCustomerCompetitor" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <option value="">None</option>
+          <!-- Will be populated dynamically -->
+        </select>
+      </div>
+      
+      <div class="mb-4">
+        <label for="editCustomerNextVisit" class="block text-sm font-medium text-gray-700 mb-1">Next Visit Date</label>
+        <input type="date" id="editCustomerNextVisit" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+      </div>
+      
+      <div class="mb-6">
+        <h3 class="text-sm font-medium text-gray-700 mb-2">Comments</h3>
+        <div id="customerComments" class="max-h-40 overflow-y-auto mb-4 p-2 bg-gray-50 rounded-md">
+          <!-- Comments will be added here dynamically -->
+        </div>
+        
+        <div class="flex items-start">
+          <textarea id="newComment" rows="2" placeholder="Add a comment..." class="flex-grow px-3 py-2 border border-gray-300 rounded-md"></textarea>
+          <button id="addCommentBtn" class="ml-2 bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">
+            Add
+          </button>
+        </div>
+      </div>
+      
+      <div class="flex justify-end">
+        <button id="updateCustomerBtn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+          Update Customer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Competitor Modal -->
+  <div id="addCompetitorModal" class="modal">
+    <div class="modal-content">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">Add New Competitor</h2>
+        <button class="close-modal text-gray-500 hover:text-gray-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <div class="mb-4">
+        <label for="newCompetitorName" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+        <input type="text" id="newCompetitorName" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+      </div>
+      
+      <div class="mb-4">
+        <label for="newCompetitorCategory" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+        <select id="newCompetitorCategory" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <option value="paints">Paints</option>
+          <option value="alkyde">Alkyde</option>
+          <option value="cosmetics">Cosmetics</option>
+        </select>
+      </div>
+      
+      <div class="mb-4">
+        <label for="newCompetitorStrength" class="block text-sm font-medium text-gray-700 mb-1">Strength</label>
+        <select id="newCompetitorStrength" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+      
+      <div class="mb-4">
+        <label for="newCompetitorLocation" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+        <input type="text" id="newCompetitorLocation" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+      </div>
+      
+      <div class="flex justify-end">
+        <button id="saveCompetitorBtn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+          Save Competitor
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add User Modal -->
+  <div id="addUserModal" class="modal">
+    <div class="modal-content">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">Add New User</h2>
+        <button class="close-modal text-gray-500 hover:text-gray-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <div class="mb-4">
+        <label for="newUserFullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+        <input type="text" id="newUserFullName" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+      </div>
+      
+      <div class="mb-4">
+        <label for="newUsername" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+        <input type="text" id="newUsername" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+      </div>
+      
+      <div class="mb-4">
+        <label for="newUserPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+        <input type="password" id="newUserPassword" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+      </div>
+      
+      <div class="mb-4">
+        <label for="newUserRole" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+        <select id="newUserRole" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <option value="admin">Administrator</option>
+          <option value="salesperson">Salesperson</option>
+        </select>
+      </div>
+      
+      <div class="mb-4">
+        <label for="newUserStatus" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+        <select id="newUserStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+      
+      <div class="flex justify-end">
+        <button id="saveUserBtn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+          Save User
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script>
     // Demo data for initial setup
-    const demoCustomers = [
+    const demoUsers = [
       {
         id: "1",
-        name: "Damascus Pharmaceuticals",
+        fullName: "Admin User",
+        username: "admin",
+        password: "admin123",
+        role: "admin",
         status: "active",
-        category: "paints",
-        address: "Damascus, Syria",
-        contact: "+963 11 123 4567",
-        lat: 33.5138,
-        lng: 36.2765,
-        lastVisit: "2023-05-15",
-        nextVisit: "2023-06-30",
-        competitorId: "1", // Link to competitor
-        comments: [
-          {
-            text: "Customer interested in new alkyde products",
-            date: "2023-05-15",
-            user: "Hazem Abdeen"
-          }
-        ]
+        locationSharing: false,
+        lastLocation: null
       },
       {
         id: "2",
-        name: "Aleppo Medical Supplies",
-        status: "hard",
-        category: "cosmetics",
-        address: "Aleppo, Syria",
-        contact: "+963 21 456 7890",
-        lat: 36.2021,
-        lng: 37.1343,
-        lastVisit: "2023-04-20",
-        nextVisit: "2023-07-10",
-        competitorId: "2", // Link to competitor
-        comments: [
-          {
-            text: "Difficult to convince, needs special pricing",
-            date: "2023-04-20",
-            user: "Ahmad Khalid"
-          }
-        ]
-      },
-      {
-        id: "3",
-        name: "Homs Industrial Group",
+        fullName: "Sales Person",
+        username: "sales",
+        password: "sales123",
+        role: "salesperson",
         status: "active",
-        category: "alkyde",
-        address: "Homs, Syria",
-        contact: "+963 31 789 0123",
-        lat: 34.7324,
-        lng: 36.7137,
-        lastVisit: "2023-05-25",
-        nextVisit: "2023-06-25",
-        competitorId: "3", // Link to competitor
-        comments: [
-          {
-            text: "Large order placed for alkyde resins",
-            date: "2023-05-25",
-            user: "Hazem Abdeen"
-          }
-        ]
-      },
-      {
-        id: "4",
-        name: "Latakia Cosmetics",
-        status: "potential",
-        category: "cosmetics",
-        address: "Latakia, Syria",
-        contact: "+963 41 234 5678",
-        lat: 35.5225,
-        lng: 35.7915,
-        lastVisit: null,
-        nextVisit: "2023-06-15",
-        competitorId: "", // No competitor
-        comments: []
+        locationSharing: false,
+        lastLocation: { lat: 33.5138, lng: 36.2965 }
       }
     ];
     
@@ -897,72 +712,101 @@
       }
     ];
     
-    const demoUsers = [
+    const demoCustomers = [
       {
         id: "1",
-        fullName: "Hazem Abdeen",
-        username: "admin",
-        password: "admin123",
-        role: "admin",
+        name: "Damascus Pharmaceuticals",
         status: "active",
-        locationSharing: false,
-        lastLocation: null,
-        lastLocationTime: null
+        category: "paints",
+        address: "Damascus, Syria",
+        contact: "+963 11 123 4567",
+        lat: 33.5138,
+        lng: 36.2765,
+        lastVisit: "2023-05-15",
+        nextVisit: "2023-06-30",
+        competitorId: "1",
+        comments: [
+          {
+            text: "Customer interested in new alkyde products",
+            date: "2023-05-15",
+            user: "Admin User"
+          }
+        ]
       },
       {
         id: "2",
-        fullName: "Ahmad Khalid",
-        username: "sales1",
-        password: "sales123",
-        role: "salesperson",
-        status: "active",
-        locationSharing: false,
-        lastLocation: { lat: 33.5138, lng: 36.2965 },
-        lastLocationTime: new Date().toISOString()
+        name: "Aleppo Medical Supplies",
+        status: "hard",
+        category: "cosmetics",
+        address: "Aleppo, Syria",
+        contact: "+963 21 456 7890",
+        lat: 36.2021,
+        lng: 37.1343,
+        lastVisit: "2023-04-20",
+        nextVisit: "2023-07-10",
+        competitorId: "2",
+        comments: [
+          {
+            text: "Difficult to convince, needs special pricing",
+            date: "2023-04-20",
+            user: "Sales Person"
+          }
+        ]
       },
       {
         id: "3",
-        fullName: "Mohammed Ali",
-        username: "sales2",
-        password: "sales123",
-        role: "salesperson",
-        status: "inactive",
-        locationSharing: false,
-        lastLocation: null,
-        lastLocationTime: null
+        name: "Homs Industrial Group",
+        status: "active",
+        category: "alkyde",
+        address: "Homs, Syria",
+        contact: "+963 31 789 0123",
+        lat: 34.7324,
+        lng: 36.7137,
+        lastVisit: "2023-05-25",
+        nextVisit: "2023-06-25",
+        competitorId: "3",
+        comments: [
+          {
+            text: "Large order placed for alkyde resins",
+            date: "2023-05-25",
+            user: "Admin User"
+          }
+        ]
+      },
+      {
+        id: "4",
+        name: "Latakia Cosmetics",
+        status: "potential",
+        category: "cosmetics",
+        address: "Latakia, Syria",
+        contact: "+963 41 234 5678",
+        lat: 35.5225,
+        lng: 35.7915,
+        lastVisit: null,
+        nextVisit: "2023-06-15",
+        competitorId: "",
+        comments: []
       }
     ];
     
     // Global variables
-    let map = null;
-    let markers = [];
+    let map;
+    let currentUser = null;
+    let mapMode = 'view';
+    let tempMarker = null;
+    let clickedLatLng = null;
+    let customerMarkers = [];
     let competitorMarkers = [];
     let salespersonMarkers = [];
-    let currentUser = null;
-    let isAuthenticated = false;
-    let firebase;
-    let db;
-    let mapMode = 'view'; // 'view' or 'add'
-    let tempMarker = null; // Temporary marker for adding customers
-    let clickedLatLng = null; // Store clicked coordinates
-    let filteredCustomers = []; // Store filtered customers
-    let filteredCompetitors = []; // Store filtered competitors
-    let locationWatchId = null; // For geolocation tracking
-    let locationUpdateInterval = null; // For periodic location updates
+    let locationWatchId = null;
+    
+    // Data storage
+    let users = [...demoUsers];
+    let competitors = [...demoCompetitors];
+    let customers = [...demoCustomers];
     
     // Initialize the application
     document.addEventListener('DOMContentLoaded', function() {
-      // Initialize Firebase
-      try {
-        firebase = window.firebase;
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
-        console.log("Firebase initialized successfully");
-      } catch (error) {
-        console.error("Error initializing Firebase:", error);
-        // Continue with demo data
-      }
-      
       // Setup event listeners
       setupEventListeners();
     });
@@ -970,7 +814,7 @@
     // Setup event listeners
     function setupEventListeners() {
       // Login button
-      document.getElementById('loginButton').addEventListener('click', handleLogin);
+      document.getElementById('loginBtn').addEventListener('click', handleLogin);
       
       // Enter key for login
       document.getElementById('password').addEventListener('keypress', function(e) {
@@ -980,7 +824,7 @@
       });
       
       // Logout button
-      document.getElementById('logoutButton').addEventListener('click', handleLogout);
+      document.getElementById('logoutBtn').addEventListener('click', handleLogout);
       
       // Tab buttons
       document.querySelectorAll('.tab-button').forEach(button => {
@@ -993,6 +837,12 @@
       document.getElementById('viewModeBtn').addEventListener('click', () => setMapMode('view'));
       document.getElementById('addModeBtn').addEventListener('click', () => setMapMode('add'));
       
+      // Add customer button
+      document.getElementById('addCustomerBtn').addEventListener('click', function() {
+        populateCompetitorDropdown('newCustomerCompetitor');
+        document.getElementById('addCustomerModal').style.display = 'flex';
+      });
+      
       // Add competitor button
       document.getElementById('addCompetitorBtn').addEventListener('click', function() {
         document.getElementById('addCompetitorModal').style.display = 'flex';
@@ -1003,33 +853,12 @@
         document.getElementById('addUserModal').style.display = 'flex';
       });
       
-      // Add customer button (from customers tab)
-      document.getElementById('addCustomerBtn').addEventListener('click', function() {
-        // Populate competitor dropdown
-        populateCompetitorDropdown('newCustomerCompetitor');
-        
-        // Show modal if in customers tab, otherwise switch to map tab
-        if (document.getElementById('customers-tab').classList.contains('active')) {
-          document.getElementById('addCustomerModal').style.display = 'flex';
-        } else {
-          switchTab('map-tab');
-          setMapMode('add');
-          showToast("Click on the map to add a new customer");
-        }
-      });
-      
       // Close modals
       document.querySelectorAll('.close-modal').forEach(button => {
         button.addEventListener('click', function() {
           this.closest('.modal').style.display = 'none';
         });
       });
-      
-      // Save competitor button
-      document.getElementById('saveCompetitorBtn').addEventListener('click', saveCompetitor);
-      
-      // Save user button
-      document.getElementById('saveUserBtn').addEventListener('click', saveUser);
       
       // Save customer button
       document.getElementById('saveCustomerBtn').addEventListener('click', saveCustomer);
@@ -1040,7 +869,13 @@
       // Add comment button
       document.getElementById('addCommentBtn').addEventListener('click', addComment);
       
-      // Export customers to CSV
+      // Save competitor button
+      document.getElementById('saveCompetitorBtn').addEventListener('click', saveCompetitor);
+      
+      // Save user button
+      document.getElementById('saveUserBtn').addEventListener('click', saveUser);
+      
+      // Export customers button
       document.getElementById('exportCustomersBtn').addEventListener('click', exportCustomersToCSV);
       
       // Filter change events
@@ -1061,18 +896,7 @@
       document.getElementById('userSearch').addEventListener('input', applyUserFilters);
       
       // Location sharing toggle
-      document.getElementById('toggleLocationSharingBtn').addEventListener('click', toggleLocationSharing);
-    }
-    
-    // Show toast notification
-    function showToast(message) {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.classList.add('show');
-      
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 3000);
+      document.getElementById('toggleLocationBtn').addEventListener('click', toggleLocationSharing);
     }
     
     // Handle login
@@ -1081,252 +905,130 @@
       const password = document.getElementById('password').value;
       
       if (!username || !password) {
-        const loginError = document.getElementById('loginError');
-        loginError.textContent = 'Please enter both username and password';
-        loginError.classList.remove('hidden');
+        showLoginError('Please enter both username and password');
         return;
       }
       
-      // Check credentials against demo users
-      const user = demoUsers.find(u => u.username === username && u.password === password);
+      const user = users.find(u => u.username === username && u.password === password);
       
       if (user) {
-        // Set current user
         currentUser = user;
-        isAuthenticated = true;
-        
-        // Show main content
         showMainContent();
       } else {
-        // Show error
-        const loginError = document.getElementById('loginError');
-        loginError.textContent = 'Invalid username or password';
-        loginError.classList.remove('hidden');
+        showLoginError('Invalid username or password');
       }
+    }
+    
+    // Show login error
+    function showLoginError(message) {
+      const loginError = document.getElementById('loginError');
+      loginError.textContent = message;
+      loginError.classList.remove('hidden');
     }
     
     // Show main content
     function showMainContent() {
-      document.getElementById('loginOverlay').style.display = 'none';
-      document.getElementById('mainContent').style.display = 'block';
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainContent').classList.remove('hidden');
       
       // Update user display
-      document.getElementById('currentUserDisplay').textContent = currentUser.fullName || currentUser.username;
-      
-      // Update role badge
-      const roleBadge = document.getElementById('userRoleBadge');
-      roleBadge.textContent = currentUser.role === 'admin' ? 'Administrator' : 'Salesperson';
-      roleBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium';
-      
-      if (currentUser.role === 'admin') {
-        roleBadge.classList.add('bg-purple-100', 'text-purple-800');
-      } else {
-        roleBadge.classList.add('bg-blue-100', 'text-blue-800');
-      }
+      document.getElementById('userDisplay').textContent = currentUser.fullName;
+      document.getElementById('roleDisplay').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Salesperson';
       
       // Update UI based on role
-      updateUIForRole();
+      if (currentUser.role === 'admin') {
+        document.getElementById('adminTab').classList.remove('hidden');
+        document.getElementById('showSalespeopleLabel').style.display = 'inline-flex';
+      } else {
+        document.getElementById('adminTab').classList.add('hidden');
+        document.getElementById('showSalespeopleLabel').style.display = 'none';
+        document.getElementById('locationSharingControls').classList.remove('hidden');
+        updateLocationSharingButton();
+      }
       
       // Initialize map
       initMap();
       
+      // Load data
+      loadCustomerTable();
+      loadCompetitorTable();
+      loadUserTable();
+      
       // Populate competitor dropdown in map filter
       populateCompetitorFilterDropdown();
-      
-      // Load data
-      loadCustomers();
-      loadCompetitors();
-      loadUsers();
-      
-      // Setup location sharing for salespeople
-      if (currentUser.role === 'salesperson') {
-        setupLocationSharing();
-      }
-    }
-    
-    // Update UI based on user role
-    function updateUIForRole() {
-      if (currentUser.role === 'admin') {
-        // Show admin-only elements
-        document.getElementById('adminOnlyTab').style.display = 'block';
-        document.getElementById('showSalespeopleLabel').style.display = 'inline-flex';
-        document.getElementById('locationSharingControls').style.display = 'none';
-      } else {
-        // Hide admin-only elements
-        document.getElementById('adminOnlyTab').style.display = 'none';
-        document.getElementById('showSalespeopleLabel').style.display = 'none';
-        document.getElementById('locationSharingControls').style.display = 'block';
-        
-        // Update location sharing button state
-        updateLocationSharingButton();
-      }
-    }
-    
-    // Setup location sharing for salespeople
-    function setupLocationSharing() {
-      // Show location sharing controls
-      document.getElementById('locationSharingControls').style.display = 'block';
-      
-      // Update button state
-      updateLocationSharingButton();
-    }
-    
-    // Update location sharing button state
-    function updateLocationSharingButton() {
-      const statusIndicator = document.getElementById('locationSharingStatus');
-      const statusText = document.getElementById('locationSharingText');
-      
-      if (currentUser.locationSharing) {
-        statusIndicator.classList.remove('location-sharing-inactive');
-        statusIndicator.classList.add('location-sharing-active');
-        statusText.textContent = 'Stop Sharing';
-      } else {
-        statusIndicator.classList.remove('location-sharing-active');
-        statusIndicator.classList.add('location-sharing-inactive');
-        statusText.textContent = 'Share Location';
-      }
-    }
-    
-    // Toggle location sharing
-    function toggleLocationSharing() {
-      if (!currentUser || currentUser.role !== 'salesperson') return;
-      
-      if (currentUser.locationSharing) {
-        // Stop sharing
-        stopLocationSharing();
-      } else {
-        // Start sharing
-        startLocationSharing();
-      }
-    }
-    
-    // Start location sharing
-    function startLocationSharing() {
-      if (!navigator.geolocation) {
-        showToast("Geolocation is not supported by your browser");
-        return;
-      }
-      
-      // Check for permission
-      navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
-        if (result.state === 'denied') {
-          showToast("Location permission is denied. Please enable it in your browser settings.");
-          return;
-        }
-        
-        // Set sharing flag
-        currentUser.locationSharing = true;
-        updateLocationSharingButton();
-        
-        // Start watching position
-        locationWatchId = navigator.geolocation.watchPosition(
-          updateUserLocation,
-          handleLocationError,
-          { enableHighAccuracy: true, maximumAge: 30000, timeout: 27000 }
-        );
-        
-        // Set up periodic updates (every 2 minutes)
-        locationUpdateInterval = setInterval(() => {
-          navigator.geolocation.getCurrentPosition(
-            updateUserLocation,
-            handleLocationError,
-            { enableHighAccuracy: true }
-          );
-        }, 120000);
-        
-        showToast("Location sharing started");
-      });
-    }
-    
-    // Stop location sharing
-    function stopLocationSharing() {
-      // Clear watch and interval
-      if (locationWatchId !== null) {
-        navigator.geolocation.clearWatch(locationWatchId);
-        locationWatchId = null;
-      }
-      
-      if (locationUpdateInterval !== null) {
-        clearInterval(locationUpdateInterval);
-        locationUpdateInterval = null;
-      }
-      
-      // Update user
-      currentUser.locationSharing = false;
-      updateLocationSharingButton();
-      
-      showToast("Location sharing stopped");
-    }
-    
-    // Update user location
-    function updateUserLocation(position) {
-      const { latitude, longitude } = position.coords;
-      
-      // Update current user location
-      currentUser.lastLocation = { lat: latitude, lng: longitude };
-      currentUser.lastLocationTime = new Date().toISOString();
-      
-      // Update in demo data
-      const userIndex = demoUsers.findIndex(u => u.id === currentUser.id);
-      if (userIndex !== -1) {
-        demoUsers[userIndex].lastLocation = currentUser.lastLocation;
-        demoUsers[userIndex].lastLocationTime = currentUser.lastLocationTime;
-      }
-      
-      // Update salesperson markers if admin is viewing the map
-      if (map) {
-        updateSalespersonMarkers();
-      }
-    }
-    
-    // Handle location error
-    function handleLocationError(error) {
-      let errorMessage;
-      
-      switch(error.code) {
-        case error.PERMISSION_DENIED:
-          errorMessage = "Location permission denied";
-          break;
-        case error.POSITION_UNAVAILABLE:
-          errorMessage = "Location information is unavailable";
-          break;
-        case error.TIMEOUT:
-          errorMessage = "Location request timed out";
-          break;
-        default:
-          errorMessage = "An unknown error occurred";
-          break;
-      }
-      
-      showToast(`Error: ${errorMessage}`);
-      stopLocationSharing();
     }
     
     // Handle logout
     function handleLogout() {
       // Stop location sharing if active
-      if (currentUser && currentUser.locationSharing) {
-        stopLocationSharing();
+      if (locationWatchId) {
+        navigator.geolocation.clearWatch(locationWatchId);
+        locationWatchId = null;
       }
       
-      // Clear current user
+      // Reset current user
       currentUser = null;
-      isAuthenticated = false;
       
-      // Clear map if exists
-      if (map) {
-        map.remove();
-        map = null;
-      }
-      
-      // Show login form
-      document.getElementById('loginOverlay').style.display = 'flex';
-      document.getElementById('mainContent').style.display = 'none';
+      // Hide main content and show login screen
+      document.getElementById('mainContent').classList.add('hidden');
+      document.getElementById('loginScreen').style.display = 'flex';
       
       // Clear login form
       document.getElementById('username').value = '';
       document.getElementById('password').value = '';
       document.getElementById('loginError').classList.add('hidden');
+      
+      // Clear map
+      if (map) {
+        map.remove();
+        map = null;
+      }
+    }
+    
+    // Initialize map
+    function initMap() {
+      // Create map centered on Syria
+      map = L.map('map').setView([35.0, 38.0], 7);
+      
+      // Add tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+      
+      // Add click event for adding customers
+      map.on('click', function(e) {
+        if (mapMode === 'add') {
+          clickedLatLng = e.latlng;
+          
+          // Remove previous temporary marker if exists
+          if (tempMarker) {
+            map.removeLayer(tempMarker);
+          }
+          
+          // Create temporary marker
+          const markerHtml = `<div class="custom-marker status-active">+</div>`;
+          const icon = L.divIcon({
+            html: markerHtml,
+            className: '',
+            iconSize: [30, 30]
+          });
+          
+          tempMarker = L.marker(e.latlng, { icon: icon }).addTo(map);
+          
+          // Show add customer form
+          populateCompetitorDropdown('newCustomerCompetitor');
+          document.getElementById('addCustomerModal').style.display = 'flex';
+        }
+      });
+      
+      // Add customer markers
+      addCustomerMarkers();
+      
+      // Add competitor markers
+      addCompetitorMarkers();
+      
+      // Add salesperson markers
+      addSalespersonMarkers();
     }
     
     // Switch tab
@@ -1352,53 +1054,10 @@
       
       // Special handling for map tab
       if (tabId === 'map-tab' && map) {
-        // Refresh map size after tab switch
         setTimeout(() => {
           map.invalidateSize();
         }, 100);
       }
-    }
-    
-    // Initialize map
-    function initMap() {
-      // Create map centered on Syria
-      map = L.map('map').setView([35.0, 38.0], 7);
-      
-      // Add tile layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
-      
-      // Add click event to map for adding customers
-      map.on('click', function(e) {
-        if (mapMode === 'add') {
-          // Store clicked coordinates
-          clickedLatLng = e.latlng;
-          
-          // Remove previous temporary marker if exists
-          if (tempMarker) {
-            map.removeLayer(tempMarker);
-          }
-          
-          // Create temporary marker
-          const markerHtml = `<div class="custom-marker status-active">+</div>`;
-          const icon = L.divIcon({
-            html: markerHtml,
-            className: '',
-            iconSize: [30, 30]
-          });
-          
-          tempMarker = L.marker(e.latlng, { icon: icon }).addTo(map);
-          
-          // Show add customer form
-          showAddCustomerForm();
-        }
-      });
-      
-      // Load markers
-      loadCustomerMarkers();
-      loadCompetitorMarkers();
-      loadSalespersonMarkers();
     }
     
     // Set map mode
@@ -1407,8 +1066,12 @@
       
       // Update button styles
       if (mode === 'view') {
-        document.getElementById('viewModeBtn').classList.add('active');
-        document.getElementById('addModeBtn').classList.remove('active');
+        document.getElementById('viewModeBtn').classList.add('bg-blue-600', 'text-white');
+        document.getElementById('viewModeBtn').classList.remove('bg-gray-200', 'text-gray-700');
+        document.getElementById('addModeBtn').classList.add('bg-gray-200', 'text-gray-700');
+        document.getElementById('addModeBtn').classList.remove('bg-blue-600', 'text-white');
+        
+        // Reset cursor
         if (map) map.getContainer().style.cursor = '';
         
         // Remove temporary marker if exists
@@ -1417,291 +1080,36 @@
           tempMarker = null;
         }
       } else {
-        document.getElementById('viewModeBtn').classList.remove('active');
-        document.getElementById('addModeBtn').classList.add('active');
+        document.getElementById('viewModeBtn').classList.add('bg-gray-200', 'text-gray-700');
+        document.getElementById('viewModeBtn').classList.remove('bg-blue-600', 'text-white');
+        document.getElementById('addModeBtn').classList.add('bg-blue-600', 'text-white');
+        document.getElementById('addModeBtn').classList.remove('bg-gray-200', 'text-gray-700');
+        
+        // Set cursor to crosshair
         if (map) map.getContainer().style.cursor = 'crosshair';
         
         showToast("Click on the map to add a new customer");
       }
     }
     
-    // Show add customer form
-    function showAddCustomerForm() {
-      // Clear form fields
-      document.getElementById('newCustomerName').value = '';
-      document.getElementById('newCustomerAddress').value = '';
-      document.getElementById('newCustomerContact').value = '';
-      
-      // Populate competitor dropdown
-      populateCompetitorDropdown('newCustomerCompetitor');
-      
-      // Show modal
-      document.getElementById('addCustomerModal').style.display = 'flex';
-    }
-    
-    // Populate competitor dropdown
-    function populateCompetitorDropdown(elementId) {
-      const dropdown = document.getElementById(elementId);
-      
-      // Clear existing options except the first one
-      while (dropdown.options.length > 1) {
-        dropdown.remove(1);
-      }
-      
-      // Add competitor options
-      demoCompetitors.forEach(competitor => {
-        const option = document.createElement('option');
-        option.value = competitor.id;
-        option.textContent = competitor.name;
-        dropdown.appendChild(option);
-      });
-    }
-    
-    // Populate competitor filter dropdown
-    function populateCompetitorFilterDropdown() {
-      const dropdown = document.getElementById('mapCompetitorFilter');
-      
-      // Clear existing options except the first one
-      while (dropdown.options.length > 1) {
-        dropdown.remove(1);
-      }
-      
-      // Add competitor options
-      demoCompetitors.forEach(competitor => {
-        const option = document.createElement('option');
-        option.value = competitor.id;
-        option.textContent = competitor.name;
-        dropdown.appendChild(option);
-      });
-    }
-    
-    // Load customer markers
-    function loadCustomerMarkers() {
+    // Add customer markers to map
+    function addCustomerMarkers() {
       // Clear existing markers
-      markers.forEach(marker => {
-        if (map && marker.marker) {
-          map.removeLayer(marker.marker);
-        }
+      customerMarkers.forEach(marker => {
+        if (map) map.removeLayer(marker.marker);
       });
-      markers = [];
+      customerMarkers = [];
       
-      // Add customer markers
-      filteredCustomers = [...demoCustomers]; // Start with all customers
-      applyMapFilters(); // Apply filters
-    }
-    
-    // Load competitor markers
-    function loadCompetitorMarkers() {
-      // Clear existing markers
-      competitorMarkers.forEach(marker => {
-        if (map && marker) {
-          map.removeLayer(marker);
-        }
-      });
-      competitorMarkers = [];
-      
-      // Add competitor markers
-      demoCompetitors.forEach(competitor => {
-        addCompetitorMarker(competitor);
-      });
-      
-      // Apply filters
-      applyMapFilters();
-    }
-    
-    // Load salesperson markers
-    function loadSalespersonMarkers() {
-      // Clear existing markers
-      salespersonMarkers.forEach(marker => {
-        if (map && marker) {
-          map.removeLayer(marker);
-        }
-      });
-      salespersonMarkers = [];
-      
-      // Add salesperson markers for active users with location data
-      const activeSalespeople = demoUsers.filter(user => 
-        user.role === 'salesperson' && 
-        user.status === 'active' && 
-        user.lastLocation
-      );
-      
-      activeSalespeople.forEach(salesperson => {
-        addSalespersonMarker(salesperson);
-      });
-      
-      // Apply filters
-      applyMapFilters();
-    }
-    
-    // Update salesperson markers
-    function updateSalespersonMarkers() {
-      // Clear existing markers
-      salespersonMarkers.forEach(marker => {
-        if (map && marker) {
-          map.removeLayer(marker);
-        }
-      });
-      salespersonMarkers = [];
-      
-      // Add salesperson markers for active users with location data
-      const activeSalespeople = demoUsers.filter(user => 
-        user.role === 'salesperson' && 
-        user.status === 'active' && 
-        user.lastLocation
-      );
-      
-      activeSalespeople.forEach(salesperson => {
-        addSalespersonMarker(salesperson);
-      });
-      
-      // Apply filters
-      applyMapFilters();
-    }
-    
-    // Apply map filters
-    function applyMapFilters() {
-      const statusFilter = document.getElementById('mapStatusFilter').value;
-      const categoryFilter = document.getElementById('mapCategoryFilter').value;
-      const competitorFilter = document.getElementById('mapCompetitorFilter').value;
-      const showCompetitors = document.getElementById('showCompetitors').checked;
-      const showSalespeople = document.getElementById('showSalespeople') ? document.getElementById('showSalespeople').checked : false;
-      
-      // Filter customers
-      filteredCustomers = demoCustomers.filter(customer => {
-        // Status filter
-        if (statusFilter !== 'all' && customer.status !== statusFilter) {
-          return false;
-        }
-        
-        // Category filter
-        if (categoryFilter !== 'all' && customer.category !== categoryFilter) {
-          return false;
-        }
-        
-        // Competitor filter
-        if (competitorFilter !== 'all' && customer.competitorId !== competitorFilter) {
-          return false;
-        }
-        
-        return true;
-      });
-      
-      // Clear existing markers
-      markers.forEach(marker => {
-        if (map && marker.marker) {
-          map.removeLayer(marker.marker);
-        }
-      });
-      markers = [];
-      
-      // Add filtered customer markers
-      filteredCustomers.forEach(customer => {
+      // Add markers for each customer
+      customers.forEach(customer => {
         addCustomerMarker(customer);
       });
       
-      // Show/hide competitor markers
-      competitorMarkers.forEach(marker => {
-        if (map) {
-          if (showCompetitors) {
-            marker.addTo(map);
-          } else {
-            map.removeLayer(marker);
-          }
-        }
-      });
-      
-      // Show/hide salesperson markers
-      salespersonMarkers.forEach(marker => {
-        if (map) {
-          if (showSalespeople) {
-            marker.addTo(map);
-          } else {
-            map.removeLayer(marker);
-          }
-        }
-      });
+      // Apply filters
+      applyMapFilters();
     }
     
-    // Apply customer filters
-    function applyCustomerFilters() {
-      const statusFilter = document.getElementById('customerStatusFilter').value;
-      const categoryFilter = document.getElementById('customerCategoryFilter').value;
-      const searchTerm = document.getElementById('customerSearch').value.toLowerCase();
-      
-      // Filter customers
-      filteredCustomers = demoCustomers.filter(customer => {
-        // Status filter
-        if (statusFilter !== 'all' && customer.status !== statusFilter) {
-          return false;
-        }
-        
-        // Category filter
-        if (categoryFilter !== 'all' && customer.category !== categoryFilter) {
-          return false;
-        }
-        
-        // Search filter
-        if (searchTerm && !customer.name.toLowerCase().includes(searchTerm)) {
-          return false;
-        }
-        
-        return true;
-      });
-      
-      // Refresh customer list
-      loadCustomerTable();
-    }
-    
-    // Apply competitor filters
-    function applyCompetitorFilters() {
-      const categoryFilter = document.getElementById('competitorCategoryFilter').value;
-      const searchTerm = document.getElementById('competitorSearch').value.toLowerCase();
-      
-      // Filter competitors
-      filteredCompetitors = demoCompetitors.filter(competitor => {
-        // Category filter
-        if (categoryFilter !== 'all' && competitor.category !== categoryFilter) {
-          return false;
-        }
-        
-        // Search filter
-        if (searchTerm && !competitor.name.toLowerCase().includes(searchTerm)) {
-          return false;
-        }
-        
-        return true;
-      });
-      
-      // Refresh competitor list
-      loadCompetitorTable();
-    }
-    
-    // Apply user filters
-    function applyUserFilters() {
-      const roleFilter = document.getElementById('userRoleFilter').value;
-      const searchTerm = document.getElementById('userSearch').value.toLowerCase();
-      
-      // Filter users
-      const filteredUsers = demoUsers.filter(user => {
-        // Role filter
-        if (roleFilter !== 'all' && user.role !== roleFilter) {
-          return false;
-        }
-        
-        // Search filter
-        if (searchTerm && !user.fullName.toLowerCase().includes(searchTerm)) {
-          return false;
-        }
-        
-        return true;
-      });
-      
-      // Refresh user list
-      loadUserTable(filteredUsers);
-    }
-    
-    // Add customer marker to map
+    // Add a single customer marker
     function addCustomerMarker(customer) {
       if (!map) return;
       
@@ -1718,7 +1126,7 @@
       // Find competitor if linked
       let competitorName = "None";
       if (customer.competitorId) {
-        const competitor = demoCompetitors.find(c => c.id === customer.competitorId);
+        const competitor = competitors.find(c => c.id === customer.competitorId);
         if (competitor) {
           competitorName = competitor.name;
         }
@@ -1729,7 +1137,7 @@
         <div class="p-2">
           <h3 class="font-bold">${customer.name}</h3>
           <p class="text-sm mb-1">Status: <span class="font-medium">${capitalizeFirstLetter(customer.status)}</span></p>
-          <p class="text-sm mb-1">Category: <span class="font-medium">${capitalizeFirstLetter(customer.category || 'N/A')}</span></p>
+          <p class="text-sm mb-1">Category: <span class="font-medium">${capitalizeFirstLetter(customer.category)}</span></p>
           <p class="text-sm mb-2">Main Competitor: <span class="font-medium">${competitorName}</span></p>
           <button class="edit-customer-btn bg-blue-600 text-white py-1 px-2 rounded-md text-xs" data-id="${customer.id}">Edit Customer</button>
         </div>
@@ -1749,13 +1157,30 @@
       });
       
       // Store marker with customer data
-      markers.push({
+      customerMarkers.push({
         marker: marker,
         customer: customer
       });
     }
     
-    // Add competitor marker to map
+    // Add competitor markers to map
+    function addCompetitorMarkers() {
+      // Clear existing markers
+      competitorMarkers.forEach(marker => {
+        if (map) map.removeLayer(marker);
+      });
+      competitorMarkers = [];
+      
+      // Add markers for each competitor
+      competitors.forEach(competitor => {
+        addCompetitorMarker(competitor);
+      });
+      
+      // Apply filters
+      applyMapFilters();
+    }
+    
+    // Add a single competitor marker
     function addCompetitorMarker(competitor) {
       if (!map) return;
       
@@ -1770,7 +1195,7 @@
       const marker = L.marker([competitor.lat, competitor.lng], { icon: icon });
       
       // Count customers using this competitor
-      const customerCount = demoCustomers.filter(c => c.competitorId === competitor.id).length;
+      const customerCount = customers.filter(c => c.competitorId === competitor.id).length;
       
       // Create popup content
       const popupContent = `
@@ -1788,12 +1213,35 @@
       competitorMarkers.push(marker);
     }
     
-    // Add salesperson marker to map
+    // Add salesperson markers to map
+    function addSalespersonMarkers() {
+      // Clear existing markers
+      salespersonMarkers.forEach(marker => {
+        if (map) map.removeLayer(marker);
+      });
+      salespersonMarkers = [];
+      
+      // Add markers for salespeople with location data
+      const salespeople = users.filter(user => 
+        user.role === 'salesperson' && 
+        user.status === 'active' && 
+        user.lastLocation
+      );
+      
+      salespeople.forEach(salesperson => {
+        addSalespersonMarker(salesperson);
+      });
+      
+      // Apply filters
+      applyMapFilters();
+    }
+    
+    // Add a single salesperson marker
     function addSalespersonMarker(salesperson) {
       if (!map || !salesperson.lastLocation) return;
       
       // Create marker
-      const markerHtml = `<div class="salesperson-marker ${salesperson.locationSharing ? 'location-pulse' : ''}">${salesperson.fullName.charAt(0)}</div>`;
+      const markerHtml = `<div class="salesperson-marker">${salesperson.fullName.charAt(0)}</div>`;
       const icon = L.divIcon({
         html: markerHtml,
         className: '',
@@ -1802,16 +1250,12 @@
       
       const marker = L.marker([salesperson.lastLocation.lat, salesperson.lastLocation.lng], { icon: icon });
       
-      // Format last location time
-      const lastLocationTime = salesperson.lastLocationTime ? formatDateTime(salesperson.lastLocationTime) : 'Unknown';
-      
       // Create popup content
       const popupContent = `
         <div class="p-2">
           <h3 class="font-bold">${salesperson.fullName}</h3>
           <p class="text-sm mb-1">Status: <span class="font-medium">${capitalizeFirstLetter(salesperson.status)}</span></p>
           <p class="text-sm mb-1">Location Sharing: <span class="font-medium">${salesperson.locationSharing ? 'Active' : 'Inactive'}</span></p>
-          <p class="text-sm mb-1">Last Update: <span class="font-medium">${lastLocationTime}</span></p>
         </div>
       `;
       
@@ -1819,6 +1263,99 @@
       
       // Store marker
       salespersonMarkers.push(marker);
+    }
+    
+    // Apply map filters
+    function applyMapFilters() {
+      const statusFilter = document.getElementById('mapStatusFilter').value;
+      const categoryFilter = document.getElementById('mapCategoryFilter').value;
+      const competitorFilter = document.getElementById('mapCompetitorFilter').value;
+      const showCompetitors = document.getElementById('showCompetitors').checked;
+      const showSalespeople = document.getElementById('showSalespeople') ? document.getElementById('showSalespeople').checked : false;
+      
+      // Filter customer markers
+      customerMarkers.forEach(item => {
+        const customer = item.customer;
+        const marker = item.marker;
+        
+        let visible = true;
+        
+        // Status filter
+        if (statusFilter !== 'all' && customer.status !== statusFilter) {
+          visible = false;
+        }
+        
+        // Category filter
+        if (categoryFilter !== 'all' && customer.category !== categoryFilter) {
+          visible = false;
+        }
+        
+        // Competitor filter
+        if (competitorFilter !== 'all' && customer.competitorId !== competitorFilter) {
+          visible = false;
+        }
+        
+        // Show/hide marker
+        if (visible) {
+          marker.addTo(map);
+        } else {
+          map.removeLayer(marker);
+        }
+      });
+      
+      // Show/hide competitor markers
+      competitorMarkers.forEach(marker => {
+        if (showCompetitors) {
+          marker.addTo(map);
+        } else {
+          map.removeLayer(marker);
+        }
+      });
+      
+      // Show/hide salesperson markers
+      salespersonMarkers.forEach(marker => {
+        if (showSalespeople) {
+          marker.addTo(map);
+        } else {
+          map.removeLayer(marker);
+        }
+      });
+    }
+    
+    // Populate competitor filter dropdown
+    function populateCompetitorFilterDropdown() {
+      const dropdown = document.getElementById('mapCompetitorFilter');
+      
+      // Clear existing options except the first one
+      while (dropdown.options.length > 1) {
+        dropdown.remove(1);
+      }
+      
+      // Add competitor options
+      competitors.forEach(competitor => {
+        const option = document.createElement('option');
+        option.value = competitor.id;
+        option.textContent = competitor.name;
+        dropdown.appendChild(option);
+      });
+    }
+    
+    // Populate competitor dropdown for customer forms
+    function populateCompetitorDropdown(elementId) {
+      const dropdown = document.getElementById(elementId);
+      
+      // Clear existing options except the first one
+      while (dropdown.options.length > 1) {
+        dropdown.remove(1);
+      }
+      
+      // Add competitor options
+      competitors.forEach(competitor => {
+        const option = document.createElement('option');
+        option.value = competitor.id;
+        option.textContent = competitor.name;
+        dropdown.appendChild(option);
+      });
     }
     
     // Save customer
@@ -1866,8 +1403,11 @@
         comments: []
       };
       
-      // Add to demo data
-      demoCustomers.push(newCustomer);
+      // Add to customers array
+      customers.push(newCustomer);
+      
+      // Add marker
+      addCustomerMarker(newCustomer);
       
       // Remove temporary marker
       if (tempMarker) {
@@ -1875,26 +1415,21 @@
         tempMarker = null;
       }
       
-      // Add customer marker
-      addCustomerMarker(newCustomer);
-      
       // Close modal
       document.getElementById('addCustomerModal').style.display = 'none';
       
-      // Switch back to view mode if in map tab
-      if (document.getElementById('map-tab').classList.contains('active')) {
-        setMapMode('view');
-      }
+      // Switch back to view mode
+      setMapMode('view');
       
-      // Refresh customer list
-      loadCustomers();
+      // Refresh customer table
+      loadCustomerTable();
       
       showToast("Customer added successfully");
     }
     
     // Open edit customer modal
     function openEditCustomerModal(customerId) {
-      const customer = demoCustomers.find(c => c.id === customerId);
+      const customer = customers.find(c => c.id === customerId);
       if (!customer) {
         showToast("Customer not found");
         return;
@@ -1938,12 +1473,12 @@
       let html = '';
       sortedComments.forEach(comment => {
         html += `
-          <div class="comment-item">
-            <div class="flex justify-between">
-              <span class="comment-user">${comment.user}</span>
-              <span class="comment-date">${formatDate(comment.date)}</span>
+          <div class="border-l-4 border-blue-500 pl-2 mb-2">
+            <div class="flex justify-between text-xs">
+              <span class="font-medium">${comment.user}</span>
+              <span class="text-gray-500">${formatDate(comment.date)}</span>
             </div>
-            <div class="comment-text">${comment.text}</div>
+            <div class="text-sm mt-1">${comment.text}</div>
           </div>
         `;
       });
@@ -1961,7 +1496,7 @@
         return;
       }
       
-      const customer = demoCustomers.find(c => c.id === customerId);
+      const customer = customers.find(c => c.id === customerId);
       if (!customer) {
         showToast("Customer not found");
         return;
@@ -1995,7 +1530,7 @@
     // Update customer
     function updateCustomer() {
       const customerId = document.getElementById('editCustomerId').value;
-      const customer = demoCustomers.find(c => c.id === customerId);
+      const customer = customers.find(c => c.id === customerId);
       
       if (!customer) {
         showToast("Customer not found");
@@ -2027,37 +1562,134 @@
       customer.nextVisit = nextVisit;
       
       // Update marker
-      const markerIndex = markers.findIndex(m => m.customer.id === customerId);
-      if (markerIndex !== -1 && map) {
-        map.removeLayer(markers[markerIndex].marker);
-        markers.splice(markerIndex, 1);
+      const markerIndex = customerMarkers.findIndex(m => m.customer.id === customerId);
+      if (markerIndex !== -1) {
+        map.removeLayer(customerMarkers[markerIndex].marker);
+        customerMarkers.splice(markerIndex, 1);
         addCustomerMarker(customer);
       }
       
       // Close modal
       document.getElementById('editCustomerModal').style.display = 'none';
       
-      // Refresh customer list
-      loadCustomers();
+      // Refresh customer table
+      loadCustomerTable();
       
       showToast("Customer updated successfully");
     }
     
-    // Load customers for customer tab
-    function loadCustomers() {
-      // Set initial filters
-      filteredCustomers = [...demoCustomers];
+    // Save competitor
+    function saveCompetitor() {
+      const name = document.getElementById('newCompetitorName').value.trim();
+      const category = document.getElementById('newCompetitorCategory').value;
+      const strength = document.getElementById('newCompetitorStrength').value;
+      const location = document.getElementById('newCompetitorLocation').value.trim();
       
-      // Apply filters
-      applyCustomerFilters();
+      if (!name || !location) {
+        showToast("Please fill in all required fields");
+        return;
+      }
+      
+      // Create new competitor with random coordinates in Syria
+      const newCompetitor = {
+        id: Date.now().toString(),
+        name: name,
+        category: category,
+        strength: strength,
+        location: location,
+        lat: 35.0 + (Math.random() * 2 - 1),
+        lng: 38.0 + (Math.random() * 2 - 1)
+      };
+      
+      // Add to competitors array
+      competitors.push(newCompetitor);
+      
+      // Add marker
+      addCompetitorMarker(newCompetitor);
+      
+      // Close modal
+      document.getElementById('addCompetitorModal').style.display = 'none';
+      
+      // Refresh competitor table
+      loadCompetitorTable();
+      
+      // Update competitor dropdowns
+      populateCompetitorFilterDropdown();
+      
+      showToast("Competitor added successfully");
+    }
+    
+    // Save user
+    function saveUser() {
+      const fullName = document.getElementById('newUserFullName').value.trim();
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newUserPassword').value;
+      const role = document.getElementById('newUserRole').value;
+      const status = document.getElementById('newUserStatus').value;
+      
+      if (!fullName || !username || !password) {
+        showToast("Please fill in all required fields");
+        return;
+      }
+      
+      // Check if username already exists
+      if (users.some(u => u.username === username)) {
+        showToast("Username already exists");
+        return;
+      }
+      
+      // Create new user
+      const newUser = {
+        id: Date.now().toString(),
+        fullName: fullName,
+        username: username,
+        password: password,
+        role: role,
+        status: status,
+        locationSharing: false,
+        lastLocation: null
+      };
+      
+      // Add to users array
+      users.push(newUser);
+      
+      // Close modal
+      document.getElementById('addUserModal').style.display = 'none';
+      
+      // Refresh user table
+      loadUserTable();
+      
+      showToast("User added successfully");
     }
     
     // Load customer table
     function loadCustomerTable() {
       const tableBody = document.getElementById('customerTableBody');
-      
-      // Clear table
       tableBody.innerHTML = '';
+      
+      // Apply filters
+      const statusFilter = document.getElementById('customerStatusFilter').value;
+      const categoryFilter = document.getElementById('customerCategoryFilter').value;
+      const searchTerm = document.getElementById('customerSearch').value.toLowerCase();
+      
+      const filteredCustomers = customers.filter(customer => {
+        // Status filter
+        if (statusFilter !== 'all' && customer.status !== statusFilter) {
+          return false;
+        }
+        
+        // Category filter
+        if (categoryFilter !== 'all' && customer.category !== categoryFilter) {
+          return false;
+        }
+        
+        // Search filter
+        if (searchTerm && !customer.name.toLowerCase().includes(searchTerm)) {
+          return false;
+        }
+        
+        return true;
+      });
       
       if (filteredCustomers.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No customers found</td></tr>';
@@ -2095,7 +1727,7 @@
             </span>
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-            ${capitalizeFirstLetter(customer.category || 'N/A')}
+            ${capitalizeFirstLetter(customer.category)}
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
             ${lastVisitFormatted}
@@ -2129,21 +1761,28 @@
       });
     }
     
-    // Load competitors for competitor tab
-    function loadCompetitors() {
-      // Set initial filters
-      filteredCompetitors = [...demoCompetitors];
-      
-      // Apply filters
-      applyCompetitorFilters();
-    }
-    
     // Load competitor table
     function loadCompetitorTable() {
       const tableBody = document.getElementById('competitorTableBody');
-      
-      // Clear table
       tableBody.innerHTML = '';
+      
+      // Apply filters
+      const categoryFilter = document.getElementById('competitorCategoryFilter').value;
+      const searchTerm = document.getElementById('competitorSearch').value.toLowerCase();
+      
+      const filteredCompetitors = competitors.filter(competitor => {
+        // Category filter
+        if (categoryFilter !== 'all' && competitor.category !== categoryFilter) {
+          return false;
+        }
+        
+        // Search filter
+        if (searchTerm && !competitor.name.toLowerCase().includes(searchTerm)) {
+          return false;
+        }
+        
+        return true;
+      });
       
       if (filteredCompetitors.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No competitors found</td></tr>';
@@ -2155,7 +1794,7 @@
         const row = document.createElement('tr');
         
         // Count customers using this competitor
-        const customerCount = demoCustomers.filter(c => c.competitorId === competitor.id).length;
+        const customerCount = customers.filter(c => c.competitorId === competitor.id).length;
         
         // Create actions based on user role
         let actionsHtml = '';
@@ -2200,18 +1839,28 @@
       });
     }
     
-    // Load users for user tab
-    function loadUsers() {
-      // Apply filters
-      applyUserFilters();
-    }
-    
     // Load user table
-    function loadUserTable(filteredUsers) {
+    function loadUserTable() {
       const tableBody = document.getElementById('userTableBody');
-      
-      // Clear table
       tableBody.innerHTML = '';
+      
+      // Apply filters
+      const roleFilter = document.getElementById('userRoleFilter').value;
+      const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+      
+      const filteredUsers = users.filter(user => {
+        // Role filter
+        if (roleFilter !== 'all' && user.role !== roleFilter) {
+          return false;
+        }
+        
+        // Search filter
+        if (searchTerm && !user.fullName.toLowerCase().includes(searchTerm)) {
+          return false;
+        }
+        
+        return true;
+      });
       
       if (filteredUsers.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No users found</td></tr>';
@@ -2232,10 +1881,9 @@
         let locationStatus = 'Not available';
         if (user.role === 'salesperson') {
           if (user.lastLocation) {
-            const timeAgo = getTimeAgo(user.lastLocationTime);
             locationStatus = user.locationSharing ? 
-              `<span class="text-green-600">Active (${timeAgo})</span>` : 
-              `<span class="text-gray-600">Inactive (${timeAgo})</span>`;
+              '<span class="text-green-600">Active</span>' : 
+              '<span class="text-gray-600">Inactive</span>';
           } else {
             locationStatus = '<span class="text-gray-500">No data</span>';
           }
@@ -2298,29 +1946,26 @@
         return;
       }
       
-      // Find customer in demo data
-      const customerIndex = demoCustomers.findIndex(c => c.id === customerId);
+      // Find customer in array
+      const customerIndex = customers.findIndex(c => c.id === customerId);
       
       if (customerIndex === -1) {
         showToast("Customer not found");
         return;
       }
       
-      // Remove from demo data
-      demoCustomers.splice(customerIndex, 1);
+      // Remove from array
+      customers.splice(customerIndex, 1);
       
       // Remove marker
-      const markerIndex = markers.findIndex(m => m.customer.id === customerId);
-      if (markerIndex !== -1 && map) {
-        map.removeLayer(markers[markerIndex].marker);
-        markers.splice(markerIndex, 1);
+      const markerIndex = customerMarkers.findIndex(m => m.customer.id === customerId);
+      if (markerIndex !== -1) {
+        map.removeLayer(customerMarkers[markerIndex].marker);
+        customerMarkers.splice(markerIndex, 1);
       }
       
-      // Refresh customer list
-      loadCustomers();
-      
-      // Refresh competitor list (to update customer counts)
-      loadCompetitors();
+      // Refresh customer table
+      loadCustomerTable();
       
       showToast("Customer deleted successfully");
     }
@@ -2333,8 +1978,8 @@
         return;
       }
       
-      // Find competitor in demo data
-      const competitorIndex = demoCompetitors.findIndex(c => c.id === competitorId);
+      // Find competitor in array
+      const competitorIndex = competitors.findIndex(c => c.id === competitorId);
       
       if (competitorIndex === -1) {
         showToast("Competitor not found");
@@ -2342,7 +1987,7 @@
       }
       
       // Check if competitor is linked to any customers
-      const linkedCustomers = demoCustomers.filter(c => c.competitorId === competitorId);
+      const linkedCustomers = customers.filter(c => c.competitorId === competitorId);
       if (linkedCustomers.length > 0) {
         if (!confirm(`This competitor is linked to ${linkedCustomers.length} customer(s). Deleting it will remove the link. Continue?`)) {
           return;
@@ -2354,20 +1999,17 @@
         });
       }
       
-      // Remove from demo data
-      demoCompetitors.splice(competitorIndex, 1);
+      // Remove from array
+      competitors.splice(competitorIndex, 1);
       
       // Remove marker
-      if (map && competitorMarkers.length > competitorIndex) {
+      if (competitorMarkers.length > competitorIndex) {
         map.removeLayer(competitorMarkers[competitorIndex]);
         competitorMarkers.splice(competitorIndex, 1);
       }
       
-      // Refresh competitor list
-      loadCompetitors();
-      
-      // Refresh customer list
-      loadCustomers();
+      // Refresh competitor table
+      loadCompetitorTable();
       
       // Update competitor dropdowns
       populateCompetitorFilterDropdown();
@@ -2383,8 +2025,8 @@
         return;
       }
       
-      // Find user in demo data
-      const userIndex = demoUsers.findIndex(u => u.id === userId);
+      // Find user in array
+      const userIndex = users.findIndex(u => u.id === userId);
       
       if (userIndex === -1) {
         showToast("User not found");
@@ -2392,161 +2034,113 @@
       }
       
       // Check if trying to delete current user
-      if (currentUser && currentUser.id === userId) {
+      if (currentUser.id === userId) {
         showToast("You cannot delete your own account");
         return;
       }
       
-      // Remove from demo data
-      demoUsers.splice(userIndex, 1);
+      // Remove from array
+      users.splice(userIndex, 1);
       
-      // Refresh user list
-      loadUsers();
+      // Refresh user table
+      loadUserTable();
       
       // Update salesperson markers
-      updateSalespersonMarkers();
+      addSalespersonMarkers();
       
       showToast("User deleted successfully");
     }
     
-    // Save competitor
-    function saveCompetitor() {
-      const name = document.getElementById('newCompetitorName').value.trim();
-      const category = document.getElementById('newCompetitorCategory').value;
-      const strength = document.getElementById('newCompetitorStrength').value;
-      const location = document.getElementById('newCompetitorLocation').value.trim();
+    // Toggle location sharing
+    function toggleLocationSharing() {
+      if (currentUser.role !== 'salesperson') return;
       
-      if (!name || !location) {
-        showToast("Please fill in all required fields");
-        return;
+      if (currentUser.locationSharing) {
+        // Stop sharing
+        currentUser.locationSharing = false;
+        if (locationWatchId) {
+          navigator.geolocation.clearWatch(locationWatchId);
+          locationWatchId = null;
+        }
+        updateLocationSharingButton();
+        showToast("Location sharing stopped");
+      } else {
+        // Start sharing
+        if (navigator.geolocation) {
+          currentUser.locationSharing = true;
+          updateLocationSharingButton();
+          
+          locationWatchId = navigator.geolocation.watchPosition(
+            function(position) {
+              // Update user location
+              currentUser.lastLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              };
+              
+              // Update salesperson markers if admin is viewing the map
+              addSalespersonMarkers();
+            },
+            function(error) {
+              console.error("Geolocation error:", error);
+              showToast("Error getting location. Please check your browser settings.");
+              currentUser.locationSharing = false;
+              updateLocationSharingButton();
+            },
+            { enableHighAccuracy: true }
+          );
+          
+          showToast("Location sharing started");
+        } else {
+          showToast("Geolocation is not supported by your browser");
+        }
       }
-      
-      // Create new competitor
-      const newCompetitor = {
-        id: Date.now().toString(),
-        name: name,
-        category: category,
-        strength: strength,
-        location: location,
-        // Default coordinates for demo (Damascus)
-        lat: 33.5138 + (Math.random() * 0.1 - 0.05),
-        lng: 36.2765 + (Math.random() * 0.1 - 0.05)
-      };
-      
-      // Add to demo data
-      demoCompetitors.push(newCompetitor);
-      
-      // Add marker
-      addCompetitorMarker(newCompetitor);
-      
-      // Refresh competitor list if visible
-      loadCompetitors();
-      
-      // Update competitor dropdowns
-      populateCompetitorFilterDropdown();
-      
-      // Close modal
-      document.getElementById('addCompetitorModal').style.display = 'none';
-      
-      // Clear form
-      document.getElementById('newCompetitorName').value = '';
-      document.getElementById('newCompetitorLocation').value = '';
-      
-      showToast("Competitor added successfully");
     }
     
-    // Save user
-    function saveUser() {
-      const fullName = document.getElementById('newUserFullName').value.trim();
-      const username = document.getElementById('newUsername').value.trim();
-      const password = document.getElementById('newUserPassword').value;
-      const role = document.getElementById('newUserRole').value;
-      const status = document.getElementById('newUserStatus').value;
+    // Update location sharing button
+    function updateLocationSharingButton() {
+      const statusIndicator = document.getElementById('locationStatus');
+      const statusText = document.getElementById('locationText');
       
-      if (!fullName || !username || !password) {
-        showToast("Please fill in all required fields");
-        return;
+      if (currentUser.locationSharing) {
+        statusIndicator.classList.remove('bg-gray-500');
+        statusIndicator.classList.add('bg-green-500');
+        statusText.textContent = 'Stop Sharing';
+      } else {
+        statusIndicator.classList.remove('bg-green-500');
+        statusIndicator.classList.add('bg-gray-500');
+        statusText.textContent = 'Share Location';
       }
-      
-      // Check if username already exists
-      if (demoUsers.some(u => u.username === username)) {
-        showToast("Username already exists");
-        return;
-      }
-      
-      // Create new user
-      const newUser = {
-        id: Date.now().toString(),
-        fullName: fullName,
-        username: username,
-        password: password,
-        role: role,
-        status: status,
-        locationSharing: false,
-        lastLocation: null,
-        lastLocationTime: null
-      };
-      
-      // Add to demo data
-      demoUsers.push(newUser);
-      
-      // Refresh user list
-      loadUsers();
-      
-      // Close modal
-      document.getElementById('addUserModal').style.display = 'none';
-      
-      // Clear form
-      document.getElementById('newUserFullName').value = '';
-      document.getElementById('newUsername').value = '';
-      document.getElementById('newUserPassword').value = '';
-      
-      showToast("User added successfully");
     }
     
     // Export customers to CSV
     function exportCustomersToCSV() {
       // Create CSV content
-      let csvContent = "data:text/csv;charset=utf-8,";
+      let csvContent = "Name,Status,Category,Address,Contact,Last Visit,Next Visit,Competitor\n";
       
-      // Add headers
-      csvContent += "Name,Status,Category,Address,Contact,Last Visit,Next Visit,Comments,Competitor,Latitude,Longitude\n";
-      
-      // Add customer data
-      filteredCustomers.forEach(customer => {
-        // Format comments
-        const comments = customer.comments ? customer.comments.map(c => `"${c.date}: ${c.text} (${c.user})"`).join("; ") : "";
-        
-        // Get competitor name
+      customers.forEach(customer => {
+        // Find competitor name if linked
         let competitorName = "";
         if (customer.competitorId) {
-          const competitor = demoCompetitors.find(c => c.id === customer.competitorId);
+          const competitor = competitors.find(c => c.id === customer.competitorId);
           if (competitor) {
             competitorName = competitor.name;
           }
         }
         
+        // Format dates
+        const lastVisit = customer.lastVisit || '';
+        const nextVisit = customer.nextVisit || '';
+        
         // Add row
-        csvContent += [
-          customer.name,
-          customer.status,
-          customer.category || "",
-          customer.address || "",
-          customer.contact || "",
-          customer.lastVisit || "",
-          customer.nextVisit || "",
-          `"${comments}"`,
-          competitorName,
-          customer.lat,
-          customer.lng
-        ].join(",") + "\n";
+        csvContent += `"${customer.name}","${customer.status}","${customer.category}","${customer.address}","${customer.contact}","${lastVisit}","${nextVisit}","${competitorName}"\n`;
       });
       
       // Create download link
-      const encodedUri = encodeURI(csvContent);
+      const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "customers_export.csv");
+      link.setAttribute("download", "customers.csv");
       document.body.appendChild(link);
       
       // Trigger download
@@ -2555,55 +2149,52 @@
       // Clean up
       document.body.removeChild(link);
       
-      showToast("Customer data exported to CSV");
+      showToast("Customers exported to CSV");
     }
     
-    // Helper functions
+    // Apply customer filters
+    function applyCustomerFilters() {
+      loadCustomerTable();
+    }
+    
+    // Apply competitor filters
+    function applyCompetitorFilters() {
+      loadCompetitorTable();
+    }
+    
+    // Apply user filters
+    function applyUserFilters() {
+      loadUserTable();
+    }
+    
+    // Show toast notification
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+    
+    // Helper function to capitalize first letter
     function capitalizeFirstLetter(string) {
       if (!string) return '';
       return string.charAt(0).toUpperCase() + string.slice(1);
     }
     
+    // Helper function to format date
     function formatDate(dateString) {
       if (!dateString) return '';
+      
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    }
-    
-    function formatDateTime(dateTimeString) {
-      if (!dateTimeString) return '';
-      const date = new Date(dateTimeString);
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-    
-    function getTimeAgo(dateTimeString) {
-      if (!dateTimeString) return 'unknown';
+      if (isNaN(date.getTime())) return dateString;
       
-      const date = new Date(dateTimeString);
-      const now = new Date();
-      const diffMs = now - date;
-      const diffSec = Math.round(diffMs / 1000);
-      const diffMin = Math.round(diffSec / 60);
-      const diffHour = Math.round(diffMin / 60);
-      const diffDay = Math.round(diffHour / 24);
-      
-      if (diffSec < 60) {
-        return `${diffSec} sec ago`;
-      } else if (diffMin < 60) {
-        return `${diffMin} min ago`;
-      } else if (diffHour < 24) {
-        return `${diffHour} hr ago`;
-      } else {
-        return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-      }
+      return date.toLocaleDateString();
     }
     
+    // Helper function to get status class for badges
     function getStatusClass(status) {
       switch (status) {
         case 'active':
@@ -2619,5 +2210,5 @@
       }
     }
   </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'966b37496362545a',t:'MTc1Mzc3NzQyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'966c50e776c9545c',t:'MTc1Mzc4ODk2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
