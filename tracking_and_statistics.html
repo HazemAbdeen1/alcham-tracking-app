@@ -1,1 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistics & Salesperson Tracking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs - Using version 12.0.0 -->
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+    <style>
+        .hidden { display: none !important; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-button.active {
+            border-color: #3B82F6; /* blue-500 */
+            color: #2563EB; /* blue-600 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <h1 class="text-xl font-bold text-gray-900">Reports & Tracking</h1>
+            </div>
+            <div class="flex items-center">
+                <div class="mr-4 text-right">
+                    <span class="block text-sm text-gray-700" id="userDisplay">User Name</span>
+                    <span class="block text-xs text-gray-500" id="roleDisplay">Role</span>
+                </div>
+                <button id="logoutBtn" class="bg-gray-200 text-gray-700 py-1 px-3 rounded-md hover:bg-gray-300">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
 
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="border-b border-gray-200 mb-6">
+            <nav class="-mb-px flex space-x-8">
+                <button id="statisticsTabBtn" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="statistics-content">
+                    Statistics Overview
+                </button>
+                <button id="salespersonTrackingTabBtn" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="salesperson-tracking-content">
+                    Salesperson Tracking
+                </button>
+            </nav>
+        </div>
+
+        <!-- Statistics Content -->
+        <div id="statistics-content" class="tab-content bg-white shadow rounded-lg p-6 mb-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Statistics Overview</h2>
+                <button id="exportAllDataBtn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export All Data to CSV
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Customer Status Distribution -->
+                <div class="bg-blue-50 p-4 rounded-lg shadow-sm border border-blue-200">
+                    <h3 class="text-lg font-semibold text-blue-800 mb-2">Customer Status Distribution</h3>
+                    <ul id="customerStatusList" class="text-blue-700">
+                        <li>Loading...</li>
+                    </ul>
+                </div>
+
+                <!-- Customer Category Breakdown -->
+                <div class="bg-green-50 p-4 rounded-lg shadow-sm border border-green-200">
+                    <h3 class="text-lg font-semibold text-green-800 mb-2">Customer Category Breakdown</h3>
+                    <ul id="customerCategoryList" class="text-green-700">
+                        <li>Loading...</li>
+                    </ul>
+                </div>
+
+                <!-- Overall Activity -->
+                <div class="bg-yellow-50 p-4 rounded-lg shadow-sm border border-yellow-200">
+                    <h3 class="text-lg font-semibold text-yellow-800 mb-2">Overall Activity</h3>
+                    <p class="text-yellow-700">Total Customers: <span id="totalCustomersCount" class="font-bold">0</span></p>
+                    <p class="text-yellow-700">Total Visits Logged: <span id="totalVisitsCount" class="font-bold">0</span></p>
+                    <p class="text-yellow-700">Total Comments Added: <span id="totalCommentsCount" class="font-bold">0</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Salesperson Tracking Content -->
+        <div id="salesperson-tracking-content" class="tab-content bg-white shadow rounded-lg p-6 mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Salesperson Tracking</h2>
+
+            <!-- Filters for Salesperson Tracking -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label for="salespersonFilter" class="block text-sm font-medium text-gray-700 mb-1">Salesperson</label>
+                    <select id="salespersonFilter" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="all">All Salespeople</option>
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label for="visitDateRange" class="block text-sm font-medium text-gray-700 mb-1">Past Visits Date Range</label>
+                    <select id="visitDateRange" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="all">All Time</option>
+                        <option value="last7days">Last 7 Days</option>
+                        <option value="last30days">Last 30 Days</option>
+                        <option value="thisYear">This Year</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="upcomingVisitAddressSearch" class="block text-sm font-medium text-gray-700 mb-1">Upcoming Visits Address Search</label>
+                    <input type="text" id="upcomingVisitAddressSearch" placeholder="Search address..." class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <!-- Upcoming Visits Schedule -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold text-gray-800 mb-3">Upcoming Visits Schedule</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Visit Date</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salesperson</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="upcomingVisitsTableBody" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Loading upcoming visits...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Past Visit Counts per Salesperson -->
+            <div>
+                <h3 class="text-xl font-semibold text-gray-800 mb-3">Past Visit Counts per Salesperson</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salesperson</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Visits</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pastVisitsCountTableBody" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">Loading visit counts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            <a href="index.html" class="inline-block bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Back to Main Application</a>
+        </div>
+    </main>
+
+    <script>
+        // ====================================================================================
+        // Firebase Configuration and Initialization
+        // ====================================================================================
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "YOUR_API_KEY", // Replace with your actual Firebase config
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // ====================================================================================
+        // Global Variables
+        // ====================================================================================
+        let currentUser = null;
+        let allCustomers = [];
+        let allUsers = [];
+        let allVisits = []; // To store all visits for calculations
+
+        // ====================================================================================
+        // Helper Functions
+        // ====================================================================================
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10); // Small delay to trigger transition
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
+        }
+
+        function capitalizeFirstLetter(string) {
+            if (typeof string !== 'string' || string.length === 0) {
+                return '';
+            }
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            try {
+                const date = new Date(dateString + 'T00:00:00Z'); // Treat as UTC to avoid timezone issues
+                return date.toLocaleDateString(undefined, options);
+            } catch (e) {
+                return dateString; // Return original if parsing fails
+            }
+        }
+
+        // ====================================================================================
+        // Core Page Initialization
+        // ====================================================================================
+        document.addEventListener('DOMContentLoaded', initPage);
+
+        async function initPage() {
+            // Check if user data exists in sessionStorage (from index.html)
+            const userData = sessionStorage.getItem('currentUser');
+            if (!userData) {
+                // If no user data, redirect to login page
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                currentUser = JSON.parse(userData);
+                document.getElementById('userDisplay').textContent = currentUser.fullName;
+                document.getElementById('roleDisplay').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Salesperson';
+
+                // Check user role for access control to this page
+                if (currentUser.role !== 'admin' && currentUser.role !== 'salesperson') {
+                    showToast("Access Denied: You do not have permission to view this page.");
+                    window.location.href = 'index.html'; // Redirect if not authorized
+                    return;
+                }
+
+                // Attach event listeners
+                attachEventListeners();
+
+                // Load all necessary data from Firestore
+                await loadAllData();
+
+                // Populate filters and display initial data
+                populateSalespersonFilter();
+                displayStatistics();
+                displayUpcomingVisits();
+                displayPastVisitsCount();
+
+                // Set initial active tab based on URL parameter or default
+                const urlParams = new URLSearchParams(window.location.search);
+                const tabParam = urlParams.get('tab');
+                if (tabParam === 'salesperson-tracking') {
+                    switchTab('salesperson-tracking-content');
+                } else {
+                    switchTab('statistics-content'); // Default tab
+                }
+
+            } catch (error) {
+                console.error("Error initializing tracking_and_statistics page:", error);
+                showToast("Error loading page: " + error.message);
+                sessionStorage.removeItem('currentUser'); // Clear session storage on error
+                window.location.href = 'index.html'; // Redirect to login
+            }
+        }
+
+        function attachEventListeners() {
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+
+            document.getElementById('statisticsTabBtn').addEventListener('click', () => switchTab('statistics-content'));
+            document.getElementById('salespersonTrackingTabBtn').addEventListener('click', () => switchTab('salesperson-tracking-content'));
+
+            document.getElementById('exportAllDataBtn').addEventListener('click', exportAllDataToCSV);
+
+            document.getElementById('salespersonFilter').addEventListener('change', () => {
+                displayUpcomingVisits();
+                displayPastVisitsCount();
+            });
+            document.getElementById('visitDateRange').addEventListener('change', displayPastVisitsCount);
+            document.getElementById('upcomingVisitAddressSearch').addEventListener('input', displayUpcomingVisits);
+        }
+
+        async function handleLogout() {
+            await auth.signOut();
+            sessionStorage.removeItem('currentUser');
+            window.location.href = 'index.html'; // Redirect to main login page
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+
+            document.querySelectorAll('.tab-button').forEach(button => {
+                if (button.getAttribute('data-tab') === tabId) {
+                    button.classList.add('active');
+                    button.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                } else {
+                    button.classList.remove('active');
+                    button.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                }
+            });
+        }
+
+        // ====================================================================================
+        // Data Loading from Firestore
+        // ====================================================================================
+        async function loadAllData() {
+            try {
+                // Fetch Customers
+                const customerSnapshot = await db.collection('customers').get();
+                allCustomers = [];
+                for (const doc of customerSnapshot.docs) {
+                    const customerData = { id: doc.id, ...doc.data() };
+                    // Fetch visits for each customer
+                    const visitsSnapshot = await db.collection('customers').doc(doc.id).collection('visits').get();
+                    customerData.visits = visitsSnapshot.docs.map(visitDoc => ({ id: visitDoc.id, ...visitDoc.data() }));
+                    allCustomers.push(customerData);
+                }
+
+                // Fetch Users (Salespeople and Admins)
+                const userSnapshot = await db.collection('users').get();
+                allUsers = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Fetch all visits (flattened for easier processing)
+                allVisits = [];
+                for (const customer of allCustomers) {
+                    if (customer.visits) {
+                        allVisits.push(...customer.visits.map(visit => ({
+                            ...visit,
+                            customerId: customer.id,
+                            customerName: customer.name,
+                            customerAddress: customer.address
+                        })));
+                    }
+                }
+
+                showToast("Data loaded successfully!");
+            } catch (error) {
+                console.error("Error loading all data:", error);
+                showToast("Failed to load data: " + error.message);
+                throw error; // Re-throw to stop further processing if data load fails
+            }
+        }
+
+        // ====================================================================================
+        // Statistics Overview Functions
+        // ====================================================================================
+        function displayStatistics() {
+            // Customer Status Distribution
+            const statusCounts = {};
+            allCustomers.forEach(customer => {
+                const status = customer.status || 'unknown';
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+            });
+            const customerStatusList = document.getElementById('customerStatusList');
+            customerStatusList.innerHTML = '';
+            for (const status in statusCounts) {
+                const li = document.createElement('li');
+                li.textContent = `${capitalizeFirstLetter(status)}: ${statusCounts[status]}`;
+                customerStatusList.appendChild(li);
+            }
+
+            // Customer Category Breakdown
+            const categoryCounts = {};
+            allCustomers.forEach(customer => {
+                const category = customer.category || 'unknown';
+                categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+            });
+            const customerCategoryList = document.getElementById('customerCategoryList');
+            customerCategoryList.innerHTML = '';
+            for (const category in categoryCounts) {
+                const li = document.createElement('li');
+                li.textContent = `${capitalizeFirstLetter(category)}: ${categoryCounts[category]}`;
+                customerCategoryList.appendChild(li);
+            }
+
+            // Overall Activity
+            document.getElementById('totalCustomersCount').textContent = allCustomers.length;
+            document.getElementById('totalVisitsCount').textContent = allVisits.length;
+            let totalComments = 0;
+            allCustomers.forEach(customer => {
+                if (customer.comments) {
+                    totalComments += customer.comments.length;
+                }
+            });
+            document.getElementById('totalCommentsCount').textContent = totalComments;
+        }
+
+        // ====================================================================================
+        // Salesperson Tracking Functions
+        // ====================================================================================
+        function populateSalespersonFilter() {
+            const filterDropdown = document.getElementById('salespersonFilter');
+            filterDropdown.innerHTML = '<option value="all">All Salespeople</option>'; // Reset
+            const salespeople = allUsers.filter(user => user.role === 'salesperson' && user.status === 'active');
+            salespeople.forEach(sp => {
+                const option = document.createElement('option');
+                option.value = sp.id;
+                option.textContent = sp.fullName;
+                filterDropdown.appendChild(option);
+            });
+        }
+
+        function displayUpcomingVisits() {
+            const tableBody = document.getElementById('upcomingVisitsTableBody');
+            tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Loading upcoming visits...</td></tr>';
+
+            const selectedSalespersonId = document.getElementById('salespersonFilter').value;
+            const addressSearchTerm = document.getElementById('upcomingVisitAddressSearch').value.toLowerCase();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalize to start of day
+
+            let filteredUpcomingCustomers = allCustomers.filter(customer => {
+                // Filter by salesperson if selected
+                if (selectedSalespersonId !== 'all' && customer.salespersonId !== selectedSalespersonId) {
+                    return false;
+                }
+                // Filter by address search term
+                if (addressSearchTerm && !customer.address?.toLowerCase().includes(addressSearchTerm)) {
+                    return false;
+                }
+                // Include customers with a future nextVisit date OR potential customers with no nextVisit
+                if (customer.nextVisit) {
+                    const nextVisitDate = new Date(customer.nextVisit + 'T00:00:00Z');
+                    return nextVisitDate >= today;
+                } else if (customer.status === 'potential') {
+                    return true; // Potential customers without a scheduled visit
+                }
+                return false;
+            });
+
+            // Sort: sooner planned visit first, then potential customers
+            filteredUpcomingCustomers.sort((a, b) => {
+                const dateA = a.nextVisit ? new Date(a.nextVisit + 'T00:00:00Z') : (a.status === 'potential' ? new Date('2099-12-31T00:00:00Z') : new Date('2100-01-01T00:00:00Z')); // Potential customers last
+                const dateB = b.nextVisit ? new Date(b.nextVisit + 'T00:00:00Z') : (b.status === 'potential' ? new Date('2099-12-31T00:00:00Z') : new Date('2100-01-01T00:00:00Z'));
+
+                if (dateA < dateB) return -1;
+                if (dateA > dateB) return 1;
+                return 0;
+            });
+
+            tableBody.innerHTML = '';
+            if (filteredUpcomingCustomers.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">No upcoming visits or potential customers found.</td></tr>';
+                return;
+            }
+
+            filteredUpcomingCustomers.forEach(customer => {
+                const salespersonName = allUsers.find(u => u.id === customer.salespersonId)?.fullName || 'N/A';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${customer.name || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer.address || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer.nextVisit ? formatDate(customer.nextVisit) : (customer.status === 'potential' ? 'Not Scheduled (Potential)' : 'N/A')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${salespersonName}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${capitalizeFirstLetter(customer.status || 'N/A')}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function displayPastVisitsCount() {
+            const tableBody = document.getElementById('pastVisitsCountTableBody');
+            tableBody.innerHTML = '<tr><td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">Loading visit counts...</td></tr>';
+
+            const selectedSalespersonId = document.getElementById('salespersonFilter').value;
+            const dateRangeFilter = document.getElementById('visitDateRange').value;
+
+            const now = new Date();
+            let startDate = null;
+
+            if (dateRangeFilter === 'last7days') {
+                startDate = new Date(now);
+                startDate.setDate(now.getDate() - 7);
+            } else if (dateRangeFilter === 'last30days') {
+                startDate = new Date(now);
+                startDate.setDate(now.getDate() - 30);
+            } else if (dateRangeFilter === 'thisYear') {
+                startDate = new Date(now.getFullYear(), 0, 1); // Start of current year
+            }
+            if (startDate) startDate.setHours(0, 0, 0, 0); // Normalize to start of day
+
+            const visitCounts = {}; // { salespersonId: count }
+
+            allVisits.forEach(visit => {
+                // Filter by salesperson
+                if (selectedSalespersonId !== 'all' && visit.salespersonId !== selectedSalespersonId) {
+                    return;
+                }
+
+                // Filter by date range
+                if (startDate) {
+                    const visitDate = new Date(visit.date + 'T00:00:00Z');
+                    if (visitDate < startDate || visitDate > now) {
+                        return;
+                    }
+                }
+
+                visitCounts[visit.salespersonId] = (visitCounts[visit.salespersonId] || 0) + 1;
+            });
+
+            tableBody.innerHTML = '';
+            if (Object.keys(visitCounts).length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">No visits found for the selected criteria.</td></tr>';
+                return;
+            }
+
+            // Sort by salesperson name
+            const sortedSalespeople = Object.keys(visitCounts).map(id => {
+                const user = allUsers.find(u => u.id === id);
+                return {
+                    id: id,
+                    name: user ? user.fullName : 'Unknown Salesperson',
+                    count: visitCounts[id]
+                };
+            }).sort((a, b) => a.name.localeCompare(b.name));
+
+            sortedSalespeople.forEach(sp => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${sp.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sp.count}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // ====================================================================================
+        // Export Functions
+        // ====================================================================================
+        async function exportAllDataToCSV() {
+            if (allCustomers.length === 0) {
+                showToast("No data to export.");
+                return;
+            }
+
+            const headers = [
+                "Customer Name", "Customer Status", "Customer Category", "Customer Address", "Customer Contact",
+                "Customer Last Visit", "Customer Next Visit", "Customer Salesperson", "Customer Competitors",
+                "Comment Date", "Comment User", "Comment Text",
+                "Visit Date", "Visit Salesperson", "Visit Details"
+            ];
+
+            const rows = [];
+
+            allCustomers.forEach(customer => {
+                const customerSalesperson = allUsers.find(u => u.id === customer.salespersonId)?.fullName || 'Unknown';
+                const customerCompetitors = customer.competitors && customer.competitors.length > 0
+                    ? customer.competitors.map(compData => {
+                        // Find the competitor name from allCompetitors (if you had a global allCompetitors array)
+                        // For simplicity, we'll just use the ID if name isn't available
+                        const competitor = allCustomers.find(c => c.id === compData.id); // Assuming competitors are in customers for now, or fetch separately
+                        return `${compData.id}${compData.note ? ` (${compData.note})` : ''}`; // Fallback to ID
+                    }).join('; ')
+                    : 'None';
+
+                // Combine comments and visits for this customer, and sort them
+                const customerEntries = [];
+                if (customer.comments) {
+                    customer.comments.forEach(comment => {
+                        customerEntries.push({ type: 'comment', data: comment, date: new Date(comment.date) });
+                    });
+                }
+                if (customer.visits) {
+                    customer.visits.forEach(visit => {
+                        customerEntries.push({ type: 'visit', data: visit, date: new Date(visit.date) });
+                    });
+                }
+                customerEntries.sort((a, b) => a.date.getTime() - b.date.getTime()); // Sort chronologically
+
+                if (customerEntries.length === 0) {
+                    // Add customer row even if no comments/visits
+                    rows.push([
+                        customer.name || '', customer.status || '', customer.category || '',
+                        customer.address || '', customer.contact || '',
+                        customer.lastVisit || '', customer.nextVisit || '',
+                        customerSalesperson, customerCompetitors,
+                        '', '', '', // Empty for comment fields
+                        '', '', ''  // Empty for visit fields
+                    ]);
+                } else {
+                    customerEntries.forEach(entry => {
+                        let commentDate = '', commentUser = '', commentText = '';
+                        let visitDate = '', visitSalesperson = '', visitDetails = '';
+
+                        if (entry.type === 'comment') {
+                            commentDate = formatDate(entry.data.date);
+                            commentUser = entry.data.user || '';
+                            commentText = entry.data.text || '';
+                        } else if (entry.type === 'visit') {
+                            visitDate = formatDate(entry.data.date);
+                            visitSalesperson = entry.data.salespersonName || '';
+                            visitDetails = entry.data.details || '';
+                        }
+
+                        rows.push([
+                            customer.name || '', customer.status || '', customer.category || '',
+                            customer.address || '', customer.contact || '',
+                            customer.lastVisit || '', customer.nextVisit || '',
+                            customerSalesperson, customerCompetitors,
+                            commentDate, commentUser, commentText,
+                            visitDate, visitSalesperson, visitDetails
+                        ]);
+                    });
+                }
+            });
+
+            let csvContent = "data:text/csv;charset=utf-8," +
+                headers.map(h => `"${h.replace(/"/g, '""')}"`).join(",") + "\n" +
+                rows.map(e => e.map(f => `"${String(f).replace(/"/g, '""')}"`).join(",")).join("\n");
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "all_crm_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("All data exported to CSV.");
+        }
+    </script>
+</body>
+</html>
