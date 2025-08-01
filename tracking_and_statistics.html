@@ -115,11 +115,13 @@
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Competitor Name</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strength</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customers (Our CRM)</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Share of Our CRM (%)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="competitorComparisonTableBody" class="bg-white divide-y divide-gray-200">
-                                    <tr><td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">Loading competitor data...</td></tr>
+                                    <tr><td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">Loading competitor data...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -133,9 +135,9 @@
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Customers (Market)</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Our Customers</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Our Share (%)</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Customers (CRM)</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Our Active Customers</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Our Active Share (%)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="marketShareTableBody" class="bg-white divide-y divide-gray-200">
@@ -144,6 +146,29 @@
                             </table>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Customer Strength by Address Table -->
+            <div class="bg-white shadow rounded-lg p-6 mb-6 border-t border-gray-200 pt-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Customer Strength by Address</h2>
+                <div class="mb-4">
+                    <label for="customerAddressSearch" class="block text-sm font-medium text-gray-700 mb-1">Search by Address</label>
+                    <input type="text" id="customerAddressSearch" placeholder="Enter address to search..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status (Strength)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerStrengthTableBody" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">Loading customer strength data...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -342,6 +367,7 @@
                 populateSalespersonFilter(); // Needs allUsers
                 displayStatistics(); // Needs allCustomers, allVisits, allComments
                 displayCompetitorMarketShare(); // Needs allCustomers, allCompetitors
+                displayCustomerStrengthByAddress(); // New call
                 displayUpcomingVisits(); // Needs allCustomers, allUsers
                 displayPastVisitsCount(); // Needs allVisits, allUsers
                 renderSalespersonPerformanceCharts(); // Needs allVisits, allUsers
@@ -391,6 +417,7 @@
                 renderSalespersonPerformanceCharts(); // Re-render charts on filter change
             });
             document.getElementById('upcomingVisitAddressSearch').addEventListener('input', displayUpcomingVisits);
+            document.getElementById('customerAddressSearch').addEventListener('input', displayCustomerStrengthByAddress); // New listener
         }
 
         async function handleLogout() {
@@ -529,15 +556,21 @@
             });
 
             const sortedCompetitors = allCompetitors.sort((a, b) => a.name.localeCompare(b.name));
+            const totalCustomersInCrm = allCustomers.length; // Total customers in our CRM
 
             if (sortedCompetitors.length === 0) {
-                competitorComparisonTableBody.innerHTML = '<tr><td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">No competitors found.</td></tr>';
+                competitorComparisonTableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No competitors found.</td></tr>';
             } else {
                 sortedCompetitors.forEach(comp => {
+                    const customersWithThisCompetitor = competitorCustomerCounts[comp.id];
+                    const shareOfOurCrm = totalCustomersInCrm > 0 ? ((customersWithThisCompetitor / totalCustomersInCrm) * 100).toFixed(2) : 0;
+
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${comp.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${competitorCustomerCounts[comp.id]}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${comp.strength || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customersWithThisCompetitor}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${shareOfOurCrm}%</td>
                     `;
                     competitorComparisonTableBody.appendChild(row);
                 });
@@ -545,73 +578,80 @@
 
             // --- Market Share by Category ---
             const categories = ['paints', 'alkyde', 'cosmetics']; // Define your categories
-            const marketShareData = {}; // { category: { totalMarketCustomers: N, ourCustomers: M } }
+
+            const totalCustomersByCategoryInCrm = {}; // All customers in our CRM for this category
+            const ourActiveCustomersByCategory = {}; // Only active customers in our CRM for this category
 
             categories.forEach(cat => {
-                marketShareData[cat] = { totalMarketCustomers: 0, ourCustomers: 0 };
+                totalCustomersByCategoryInCrm[cat] = 0;
+                ourActiveCustomersByCategory[cat] = 0;
             });
 
             allCustomers.forEach(customer => {
                 const category = customer.category?.toLowerCase();
                 if (categories.includes(category)) {
-                    marketShareData[category].ourCustomers++;
-                    marketShareData[category].totalMarketCustomers++; // Our customers are part of the market
-
-                    // Add customers who have competitors in this category to total market size
-                    if (customer.competitors && Array.isArray(customer.competitors)) {
-                        customer.competitors.forEach(compData => {
-                            const competitor = allCompetitors.find(c => c.id === compData.id);
-                            if (competitor && competitor.category?.toLowerCase() === category) {
-                                // This assumes a customer having a competitor in a category means that customer
-                                // is part of the "market" for that category, even if we don't serve them fully.
-                                // We avoid double counting our own customers.
-                                // This is a simplified market size calculation.
-                                // A more precise market size would require knowing all potential customers, not just our CRM.
-                                // For this implementation, totalMarketCustomers is based on customers in our CRM + those with competitors in that category.
-                                // To avoid overcounting, we'll just count unique customers relevant to the category.
-                                // Simpler: total market customers = all customers in our CRM for that category.
-                                // This is a very simplified market share.
-                            }
-                        });
+                    totalCustomersByCategoryInCrm[category]++;
+                    if (customer.status === 'active') {
+                        ourActiveCustomersByCategory[category]++;
                     }
                 }
             });
 
-            // Re-calculating totalMarketCustomers more accurately for this context:
-            // Total market customers for a category are all customers in our CRM that belong to that category.
-            // This is a simplification, as true market size would be all potential customers, not just our existing ones.
-            // For the purpose of "compare us with other competitors and outline our market size and share compared to others"
-            // based on *our CRM data*, we'll define market as our customers + customers where competitors are primary.
-            // Let's refine: total customers in a category in our CRM, whether they are ours or have a competitor.
-            // This is still limited to our CRM.
+            if (categories.length === 0) {
+                marketShareTableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No categories defined or customers found.</td></tr>';
+            } else {
+                categories.forEach(cat => {
+                    const totalCustomersInCat = totalCustomersByCategoryInCrm[cat];
+                    const ourActiveCustomersInCat = ourActiveCustomersByCategory[cat];
+                    const ourActiveShare = totalCustomersInCat > 0 ? ((ourActiveCustomersInCat / totalCustomersInCat) * 100).toFixed(2) : 0;
 
-            // Let's define market size for a category as:
-            // (Number of our customers in that category) + (Number of customers who have a competitor in that category AND are NOT our customer in that category)
-            // This is still hard to get from current data.
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${capitalizeFirstLetter(cat)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${totalCustomersInCat}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ourActiveCustomersInCat}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ourActiveShare}%</td>
+                    `;
+                    marketShareTableBody.appendChild(row);
+                });
+            }
+        }
 
-            // Simpler Market Share: Our Customers in Category / Total Customers in that Category (from our CRM)
-            // This is the most straightforward interpretation given current data.
-            const totalCustomersByCategory = {};
-            allCustomers.forEach(customer => {
-                const category = customer.category?.toLowerCase();
-                if (categories.includes(category)) {
-                    totalCustomersByCategory[category] = (totalCustomersByCategory[category] || 0) + 1;
+        function displayCustomerStrengthByAddress() {
+            const tableBody = document.getElementById('customerStrengthTableBody');
+            tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">Loading customer strength data...</td></tr>';
+
+            const addressSearchTerm = document.getElementById('customerAddressSearch').value.toLowerCase();
+
+            let filteredCustomers = allCustomers.filter(customer => {
+                if (addressSearchTerm && !customer.address?.toLowerCase().includes(addressSearchTerm)) {
+                    return false;
                 }
+                return true;
             });
 
-            categories.forEach(cat => {
-                const ourCustomersInCat = marketShareData[cat].ourCustomers;
-                const totalMarketCustomersInCat = totalCustomersByCategory[cat] || 0; // Total customers in our CRM for this category
-                const marketShare = totalMarketCustomersInCat > 0 ? ((ourCustomersInCat / totalMarketCustomersInCat) * 100).toFixed(2) : 0;
+            // Sort by customer name for consistent display
+            filteredCustomers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
+            tableBody.innerHTML = '';
+            if (filteredCustomers.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No customers found for this address.</td></tr>';
+                return;
+            }
+
+            filteredCustomers.forEach(customer => {
                 const row = document.createElement('tr');
+                const statusClass = getStatusClass(customer.status || '');
                 row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${capitalizeFirstLetter(cat)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${totalMarketCustomersInCat}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ourCustomersInCat}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${marketShare}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${customer.name || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer.address || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">
+                            ${capitalizeFirstLetter(customer.status || 'N/A')}
+                        </span>
+                    </td>
                 `;
-                marketShareTableBody.appendChild(row);
+                tableBody.appendChild(row);
             });
         }
 
