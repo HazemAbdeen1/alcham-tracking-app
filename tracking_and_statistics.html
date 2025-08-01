@@ -148,29 +148,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Customer Strength by Address Table -->
-            <div class="bg-white shadow rounded-lg p-6 mb-6 border-t border-gray-200 pt-6">
-                <h2 class="text-2xl font-bold text-gray-900 mb-4">Customer Strength by Address</h2>
-                <div class="mb-4">
-                    <label for="customerAddressSearch" class="block text-sm font-medium text-gray-700 mb-1">Search by Address</label>
-                    <input type="text" id="customerAddressSearch" placeholder="Enter address to search..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status (Strength)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="customerStrengthTableBody" class="bg-white divide-y divide-gray-200">
-                            <tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">Loading customer strength data...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
 
         <!-- Salesperson Tracking Content -->
@@ -369,7 +346,6 @@
                             populateSalespersonFilter(); // Needs allUsers
                             displayStatistics(); // Needs allCustomers, allVisits, allComments
                             displayCompetitorMarketShare(); // Needs allCustomers, allCompetitors
-                            displayCustomerStrengthByAddress(); // New call
                             displayUpcomingVisits(); // Needs allCustomers, allUsers
                             displayPastVisitsCount(); // Needs allVisits, allUsers
                             renderSalespersonPerformanceCharts(); // Needs allVisits, allUsers
@@ -381,18 +357,20 @@
                             // Handle tab visibility and default tab based on role
                             const statisticsTabBtn = document.getElementById('statisticsTabBtn');
                             const statisticsContent = document.getElementById('statistics-content');
+                            
+                            // Always hide statistics tab for salespeople
                             if (currentUser.role === 'salesperson') {
                                 statisticsTabBtn.classList.add('hidden');
                                 statisticsContent.classList.add('hidden'); // Ensure content is hidden too
-                                // Force salesperson to salesperson tracking tab
-                                switchTab('salesperson-tracking-content');
                             } else { // Admin
                                 statisticsTabBtn.classList.remove('hidden');
-                                if (tabParam === 'salesperson-tracking') {
-                                    switchTab('salesperson-tracking-content');
-                                } else {
-                                    switchTab('statistics-content'); // Default for admin
-                                }
+                            }
+
+                            // Default to salesperson-tracking-content unless explicitly requested statistics-content
+                            if (tabParam === 'statistics-content' && currentUser.role === 'admin') {
+                                switchTab('statistics-content');
+                            } else {
+                                switchTab('salesperson-tracking-content');
                             }
 
                         } else {
@@ -436,7 +414,6 @@
                 renderSalespersonPerformanceCharts(); // Re-render charts on filter change
             });
             document.getElementById('upcomingVisitAddressSearch').addEventListener('input', displayUpcomingVisits);
-            document.getElementById('customerAddressSearch').addEventListener('input', displayCustomerStrengthByAddress); // New listener
         }
 
         async function handleLogout() {
@@ -636,53 +613,15 @@
             }
         }
 
-        function displayCustomerStrengthByAddress() {
-            const tableBody = document.getElementById('customerStrengthTableBody');
-            tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">Loading customer strength data...</td></tr>';
-
-            const addressSearchTerm = document.getElementById('customerAddressSearch').value.toLowerCase();
-
-            let filteredCustomers = allCustomers.filter(customer => {
-                if (addressSearchTerm && !customer.address?.toLowerCase().includes(addressSearchTerm)) {
-                    return false;
-                }
-                return true;
-            });
-
-            // Sort by customer name for consistent display
-            filteredCustomers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
-            tableBody.innerHTML = '';
-            if (filteredCustomers.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No customers found for this address.</td></tr>';
-                return;
-            }
-
-            filteredCustomers.forEach(customer => {
-                const row = document.createElement('tr');
-                const statusClass = getStatusClass(customer.status || '');
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${customer.name || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer.address || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">
-                            ${capitalizeFirstLetter(customer.status || 'N/A')}
-                        </span>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
-
         // ====================================================================================
         // Salesperson Tracking Functions
         // ====================================================================================
         function populateSalespersonFilter() {
             const filterDropdown = document.getElementById('salespersonFilter');
             filterDropdown.innerHTML = '<option value="all">All Salespeople</option>'; // Reset
-            const salespeople = allUsers.filter(user => user.role === 'salesperson' && user.status === 'active');
-            salespeople.forEach(sp => {
+            // Include both 'salesperson' and 'admin' roles for the filter
+            const salespeopleAndAdmins = allUsers.filter(user => (user.role === 'salesperson' || user.role === 'admin') && user.status === 'active');
+            salespeopleAndAdmins.forEach(sp => {
                 const option = document.createElement('option');
                 option.value = sp.id;
                 option.textContent = sp.fullName;
@@ -795,14 +734,13 @@
             }
 
             // Sort by salesperson name
-            const sortedSalespeople = Object.keys(visitCounts).map(id => {
-                const user = allUsers.find(u => u.id === id);
-                return {
-                    id: id,
-                    name: user ? user.fullName : 'Unknown Salesperson',
-                    count: visitCounts[id]
-                };
-            }).sort((a, b) => a.name.localeCompare(b.name));
+            const sortedSalespeople = allUsers.filter(user => (user.role === 'salesperson' || user.role === 'admin') && user.status === 'active')
+                .map(sp => ({
+                    id: sp.id,
+                    name: sp.fullName,
+                    count: visitCounts[sp.id] || 0 // Ensure count is 0 if no visits
+                }))
+                .sort((a, b) => a.name.localeCompare(b.name));
 
             sortedSalespeople.forEach(sp => {
                 const row = document.createElement('tr');
@@ -848,8 +786,9 @@
 
             // --- Chart 1: Visits Per Salesperson (Bar Chart) ---
             const visitsPerSalesperson = {};
-            allUsers.filter(user => user.role === 'salesperson' && user.status === 'active').forEach(sp => {
-                visitsPerSalesperson[sp.fullName] = 0; // Initialize with all active salespeople
+            // Include both 'salesperson' and 'admin' roles for the chart labels
+            allUsers.filter(user => (user.role === 'salesperson' || user.role === 'admin') && user.status === 'active').forEach(sp => {
+                visitsPerSalesperson[sp.fullName] = 0; // Initialize with all active salespeople/admins
             });
             filteredVisits.forEach(visit => {
                 const salespersonName = allUsers.find(u => u.id === visit.salespersonId)?.fullName || 'Unknown';
