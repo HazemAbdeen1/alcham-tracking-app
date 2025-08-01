@@ -330,73 +330,82 @@
         document.addEventListener('DOMContentLoaded', initPage);
 
         async function initPage() {
-            // Check if user data exists in sessionStorage (from index.html)
-            const userData = sessionStorage.getItem('currentUser');
-            if (!userData) {
-                // If no user data, redirect to login page
-                window.location.href = './index.html';
-                return;
-            }
+            // Use Firebase's onAuthStateChanged to manage user session across pages
+            auth.onAuthStateChanged(async firebaseUser => {
+                if (firebaseUser) {
+                    console.log("Authenticated Firebase User UID:", firebaseUser.uid);
+                    try {
+                        const doc = await db.collection('users').doc(firebaseUser.uid).get();
+                        if (doc.exists) {
+                            currentUser = { id: firebaseUser.uid, ...doc.data() };
+                            // User is authenticated and profile exists, proceed with page content
+                            document.getElementById('userDisplay').textContent = currentUser.fullName;
+                            document.getElementById('roleDisplay').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Salesperson';
 
-            try {
-                currentUser = JSON.parse(userData);
-                document.getElementById('userDisplay').textContent = currentUser.fullName;
-                document.getElementById('roleDisplay').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Salesperson';
+                            // Check user role for access control to this page
+                            if (currentUser.role !== 'admin' && currentUser.role !== 'salesperson') {
+                                showToast("Access Denied: You do not have permission to view this page.");
+                                window.location.href = './index.html'; // Redirect if not authorized
+                                return;
+                            }
 
-                // Get references to tabs and content
-                const statisticsTabBtn = document.getElementById('statisticsTabBtn');
-                const statisticsContent = document.getElementById('statistics-content');
-                const salespersonTrackingTabBtn = document.getElementById('salespersonTrackingTabBtn');
-                const salespersonTrackingContent = document.getElementById('salesperson-tracking-content');
+                            // Attach event listeners
+                            attachEventListeners();
 
+                            // Load all necessary data from Firestore
+                            await loadAllData();
 
-                // Check user role for access control to this page
-                if (currentUser.role !== 'admin' && currentUser.role !== 'salesperson') {
-                    showToast("Access Denied: You do not have permission to view this page.");
-                    window.location.href = './index.html'; // Redirect if not authorized
-                    return;
-                }
+                            // Populate filters and display initial data
+                            populateSalespersonFilter(); // Needs allUsers
+                            displayStatistics(); // Needs allCustomers, allVisits, allComments
+                            displayCompetitorMarketShare(); // Needs allCustomers, allCompetitors
+                            displayCustomerStrengthByAddress(); // New call
+                            displayUpcomingVisits(); // Needs allCustomers, allUsers
+                            displayPastVisitsCount(); // Needs allVisits, allUsers
+                            renderSalespersonPerformanceCharts(); // Needs allVisits, allUsers
 
-                // Attach event listeners
-                attachEventListeners();
+                            // Set initial active tab based on URL parameter or default
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const tabParam = urlParams.get('tab');
 
-                // Load all necessary data from Firestore
-                await loadAllData();
+                            // Handle tab visibility and default tab based on role
+                            const statisticsTabBtn = document.getElementById('statisticsTabBtn');
+                            const statisticsContent = document.getElementById('statistics-content');
+                            if (currentUser.role === 'salesperson') {
+                                statisticsTabBtn.classList.add('hidden');
+                                statisticsContent.classList.add('hidden'); // Ensure content is hidden too
+                                // Force salesperson to salesperson tracking tab
+                                switchTab('salesperson-tracking-content');
+                            } else { // Admin
+                                statisticsTabBtn.classList.remove('hidden');
+                                if (tabParam === 'salesperson-tracking') {
+                                    switchTab('salesperson-tracking-content');
+                                } else {
+                                    switchTab('statistics-content'); // Default for admin
+                                }
+                            }
 
-                // Populate filters and display initial data
-                populateSalespersonFilter(); // Needs allUsers
-                displayStatistics(); // Needs allCustomers, allVisits, allComments
-                displayCompetitorMarketShare(); // Needs allCustomers, allCompetitors
-                displayCustomerStrengthByAddress(); // New call
-                displayUpcomingVisits(); // Needs allCustomers, allUsers
-                displayPastVisitsCount(); // Needs allVisits, allUsers
-                renderSalespersonPerformanceCharts(); // Needs allVisits, allUsers
-
-                // Set initial active tab based on URL parameter or default
-                const urlParams = new URLSearchParams(window.location.search);
-                const tabParam = urlParams.get('tab');
-
-                // Handle tab visibility and default tab based on role
-                if (currentUser.role === 'salesperson') {
-                    statisticsTabBtn.classList.add('hidden');
-                    statisticsContent.classList.add('hidden'); // Ensure content is hidden too
-                    // Force salesperson to salesperson tracking tab
-                    switchTab('salesperson-tracking-content');
-                } else { // Admin
-                    statisticsTabBtn.classList.remove('hidden');
-                    if (tabParam === 'salesperson-tracking') {
-                        switchTab('salesperson-tracking-content');
-                    } else {
-                        switchTab('statistics-content'); // Default for admin
+                        } else {
+                            // User exists in Auth but not Firestore profile, log out
+                            console.warn("User profile not found in Firestore for UID:", firebaseUser.uid);
+                            await auth.signOut();
+                            sessionStorage.removeItem('currentUser'); // Clear any lingering session data
+                            window.location.href = './index.html'; // Redirect to login
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user profile on startup:", error);
+                        showToast("Error loading user session: " + error.message);
+                        await auth.signOut();
+                        sessionStorage.removeItem('currentUser'); // Clear any lingering session data
+                        window.location.href = './index.html'; // Redirect to login
                     }
+                } else {
+                    // No user is signed in, redirect to login page
+                    console.log("No Firebase user authenticated. Redirecting to login.");
+                    sessionStorage.removeItem('currentUser'); // Clear any lingering session data
+                    window.location.href = './index.html';
                 }
-
-            } catch (error) {
-                console.error("Error initializing tracking_and_statistics page:", error);
-                showToast("Error loading page: " + error.message);
-                sessionStorage.removeItem('currentUser'); // Clear session storage on error
-                window.location.href = './index.html';
-            }
+            });
         }
 
         function attachEventListeners() {
@@ -422,7 +431,7 @@
 
         async function handleLogout() {
             await auth.signOut();
-            sessionStorage.removeItem('currentUser');
+            sessionStorage.removeItem('currentUser'); // Clear session storage
             window.location.href = './index.html'; // Redirect to main login page
         }
 
