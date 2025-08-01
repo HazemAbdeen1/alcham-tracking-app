@@ -324,6 +324,16 @@
             }
         }
 
+        function getStatusClass(status) {
+            switch (status) {
+                case 'active': return 'bg-green-100 text-green-800';
+                case 'inactive': return 'bg-gray-100 text-gray-800';
+                case 'hard': return 'bg-red-100 text-red-800';
+                case 'potential': return 'bg-yellow-100 text-yellow-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
         // ====================================================================================
         // Core Page Initialization
         // ====================================================================================
@@ -352,8 +362,8 @@
                             // Attach event listeners
                             attachEventListeners();
 
-                            // Load all necessary data from Firestore
-                            await loadAllData();
+                            // Load all necessary data from Firestore and handle errors gracefully
+                            await loadAllData(); // This function now handles its own errors
 
                             // Populate filters and display initial data
                             populateSalespersonFilter(); // Needs allUsers
@@ -495,7 +505,7 @@
             } catch (error) {
                 console.error("Error loading all data:", error);
                 showToast("Failed to load data: " + error.message);
-                throw error; // Re-throw to stop further processing if data load fails
+                // IMPORTANT: Removed `throw error;` here. This prevents logout on data loading errors.
             }
         }
 
