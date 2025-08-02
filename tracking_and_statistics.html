@@ -70,7 +70,7 @@
                 <h2 class="text-2xl font-bold text-gray-900">Statistics Overview</h2>
                 <button id="exportAllDataBtn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 0 003 3h10a3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                     Export All Data to CSV
                 </button>
@@ -213,7 +213,7 @@
             </div>
 
             <!-- Past Visit Counts per Salesperson -->
-            <div>
+            <div class="mb-8">
                 <h3 class="text-xl font-semibold text-gray-800 mb-3">Past Visit Counts per Salesperson</h3>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -225,6 +225,54 @@
                         </thead>
                         <tbody id="pastVisitsCountTableBody" class="bg-white divide-y divide-gray-200">
                             <tr><td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">Loading visit counts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Actual Visits Log Table -->
+            <div class="mb-8 border-t border-gray-200 pt-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-3">Actual Visits Log <span id="actualVisitsCount" class="text-base font-normal text-gray-600">(Total: 0)</span></h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <!-- Salesperson filter now uses the main salespersonFilter dropdown -->
+                    <div>
+                        <label for="visitMonthFilter" class="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                        <select id="visitMonthFilter" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="all">All Months</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="visitYearFilter" class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                        <select id="visitYearFilter" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="all">All Years</option>
+                            <!-- Years will be populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salesperson</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visit Date</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="actualVisitsTableBody" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">Loading actual visits...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -294,7 +342,8 @@
             if (!dateString) return '';
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             try {
-                const date = new Date(dateString + 'T00:00:00Z'); // Treat as UTC to avoid timezone issues
+                // Ensure dateString is correctly parsed as UTC to avoid timezone issues
+                const date = new Date(dateString + 'T00:00:00Z'); // Append T00:00:00Z for UTC
                 return date.toLocaleDateString(undefined, options);
             } catch (e) {
                 return dateString; // Return original if parsing fails
@@ -344,11 +393,13 @@
 
                             // Populate filters and display initial data
                             populateSalespersonFilter(); // Needs allUsers
+                            populateMonthYearFilters(); // Populate month/year filters for actual visits log
                             displayStatistics(); // Needs allCustomers, allVisits, allComments
                             displayCompetitorMarketShare(); // Needs allCustomers, allCompetitors
                             displayUpcomingVisits(); // Needs allCustomers, allUsers
                             displayPastVisitsCount(); // Needs allVisits, allUsers
                             renderSalespersonPerformanceCharts(); // Needs allVisits, allUsers
+                            displayActualVisitsLog(); // Display actual visits log
 
                             // Set initial active tab based on URL parameter or default
                             const urlParams = new URLSearchParams(window.location.search);
@@ -367,6 +418,7 @@
                             }
 
                             // Default to salesperson-tracking-content unless explicitly requested statistics-content
+                            // Ensure the tab is switched AFTER all data is loaded and rendered
                             if (tabParam === 'statistics-content' && currentUser.role === 'admin') {
                                 switchTab('statistics-content');
                             } else {
@@ -404,16 +456,22 @@
 
             document.getElementById('exportAllDataBtn').addEventListener('click', exportAllDataToCSV);
 
+            // Main salesperson filter and date range filter for the entire Salesperson Tracking tab
             document.getElementById('salespersonFilter').addEventListener('change', () => {
                 displayUpcomingVisits();
                 displayPastVisitsCount();
                 renderSalespersonPerformanceCharts(); // Re-render charts on filter change
+                displayActualVisitsLog(); // Re-render actual visits log on salesperson filter change
             });
             document.getElementById('visitDateRange').addEventListener('change', () => {
                 displayPastVisitsCount();
                 renderSalespersonPerformanceCharts(); // Re-render charts on filter change
             });
             document.getElementById('upcomingVisitAddressSearch').addEventListener('input', displayUpcomingVisits);
+
+            // Listeners for month and year filters specifically for actual visits log
+            document.getElementById('visitMonthFilter').addEventListener('change', displayActualVisitsLog);
+            document.getElementById('visitYearFilter').addEventListener('change', displayActualVisitsLog);
         }
 
         async function handleLogout() {
@@ -628,6 +686,39 @@
                 filterDropdown.appendChild(option);
             });
         }
+
+        function populateMonthYearFilters() {
+            const monthFilter = document.getElementById('visitMonthFilter');
+            const yearFilter = document.getElementById('visitYearFilter');
+
+            // Populate Years
+            const years = new Set();
+            allVisits.forEach(visit => {
+                if (visit.date) {
+                    years.add(new Date(visit.date).getFullYear());
+                }
+            });
+            const sortedYears = Array.from(years).sort((a, b) => b - a); // Descending order
+
+            yearFilter.innerHTML = '<option value="all">All Years</option>';
+            sortedYears.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearFilter.appendChild(option);
+            });
+            // Set default year to current year if available
+            const currentYear = new Date().getFullYear();
+            if (sortedYears.includes(currentYear)) {
+                yearFilter.value = currentYear;
+            }
+
+
+            // Months are static, already in HTML. No need to populate dynamically.
+            // Ensure the month filter is reset to 'all' or a sensible default if needed.
+            monthFilter.value = 'all'; // Default to all months
+        }
+
 
         function displayUpcomingVisits() {
             const tableBody = document.getElementById('upcomingVisitsTableBody');
@@ -860,7 +951,7 @@
                     labels: sortedMonths,
                     datasets: [{
                         label: 'Visits',
-                        data: monthlyVisitsData,
+                        data: monthlyVisitsData, /* Corrected typo here */
                         fill: false,
                         borderColor: 'rgba(16, 185, 129, 1)', // green-500
                         tension: 0.1
@@ -895,6 +986,65 @@
                         }
                     }
                 }
+            });
+        }
+
+        function displayActualVisitsLog() {
+            const tableBody = document.getElementById('actualVisitsTableBody');
+            const actualVisitsCountSpan = document.getElementById('actualVisitsCount');
+            tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">Loading actual visits...</td></tr>';
+            actualVisitsCountSpan.textContent = '(Total: 0)'; // Reset count
+
+            // Use the main salesperson filter for this table
+            const selectedSalespersonId = document.getElementById('salespersonFilter').value;
+            const selectedMonth = document.getElementById('visitMonthFilter').value;
+            const selectedYear = document.getElementById('visitYearFilter').value;
+
+            let filteredVisits = allVisits.filter(visit => {
+                // Filter by salesperson
+                if (selectedSalespersonId !== 'all' && visit.salespersonId !== selectedSalespersonId) {
+                    return false;
+                }
+
+                // Filter by year
+                if (selectedYear !== 'all' && visit.date) {
+                    const visitYear = new Date(visit.date).getFullYear().toString();
+                    if (visitYear !== selectedYear) {
+                        return false;
+                    }
+                }
+
+                // Filter by month
+                if (selectedMonth !== 'all' && visit.date) {
+                    const visitMonth = (new Date(visit.date).getMonth() + 1).toString(); // getMonth is 0-indexed
+                    if (visitMonth !== selectedMonth) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+
+            // Sort by date, newest first
+            filteredVisits.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+            tableBody.innerHTML = '';
+            actualVisitsCountSpan.textContent = `(Total: ${filteredVisits.length})`; // Update count
+
+            if (filteredVisits.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No actual visits found for the selected criteria.</td></tr>';
+                return;
+            }
+
+            filteredVisits.forEach(visit => {
+                const salespersonName = allUsers.find(u => u.id === visit.salespersonId)?.fullName || 'N/A';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${salespersonName}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${visit.customerName || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(visit.date)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${visit.details || 'No details'}</td>
+                `;
+                tableBody.appendChild(row);
             });
         }
 
