@@ -70,7 +70,7 @@
                 <h2 class="text-2xl font-bold text-gray-900">Statistics Overview</h2>
                 <button id="exportAllDataBtn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 0 003 3h10a3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                     Export All Data to CSV
                 </button>
@@ -512,6 +512,11 @@
                     // Fetch visits for each customer
                     const visitsSnapshot = await db.collection('customers').doc(doc.id).collection('visits').get();
                     customerData.visits = visitsSnapshot.docs.map(visitDoc => ({ id: visitDoc.id, ...visitDoc.data() }));
+
+                    // Fetch comments for each customer
+                    const commentsSnapshot = await db.collection('customers').doc(doc.id).collection('comments').get();
+                    customerData.comments = commentsSnapshot.docs.map(commentDoc => ({ id: commentDoc.id, ...commentDoc.data() }));
+
                     allCustomers.push(customerData);
                 }
 
@@ -707,16 +712,20 @@
                 option.textContent = year;
                 yearFilter.appendChild(option);
             });
-            // Set default year to current year if available
+
+            // Set default year to current year if available, otherwise the latest year in data
             const currentYear = new Date().getFullYear();
             if (sortedYears.includes(currentYear)) {
                 yearFilter.value = currentYear;
+            } else if (sortedYears.length > 0) {
+                yearFilter.value = sortedYears[0]; // Default to the latest year available in data
+            } else {
+                yearFilter.value = 'all'; // Fallback if no years in data
             }
 
-
-            // Months are static, already in HTML. No need to populate dynamically.
-            // Ensure the month filter is reset to 'all' or a sensible default if needed.
-            monthFilter.value = 'all'; // Default to all months
+            // Set default month to current month
+            const currentMonth = new Date().getMonth() + 1; // getMonth is 0-indexed
+            monthFilter.value = currentMonth.toString();
         }
 
 
@@ -951,7 +960,7 @@
                     labels: sortedMonths,
                     datasets: [{
                         label: 'Visits',
-                        data: monthlyVisitsData, /* Corrected typo here */
+                        data: monthlyVisitsData,
                         fill: false,
                         borderColor: 'rgba(16, 185, 129, 1)', // green-500
                         tension: 0.1
